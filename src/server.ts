@@ -8,7 +8,7 @@ async function bootstrap() {
   try {
     console.log(config.database_url);
     await mongoose.connect(config.database_url as string);
-    logger.info(`🛢   Database is connected successfully`);
+    logger.info(`Database is connected successfully`);
 
     server = app.listen(config.port, () => {
       logger.info(`Server running on port ${config.port}`);
