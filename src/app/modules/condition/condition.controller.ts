@@ -20,7 +20,7 @@ const fetchCondition = catchAsync(async (req: Request, res: Response) => {
     data: result,
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Condition featched successfully',
+    message: 'Conditions featched successfully',
   });
 });
 
