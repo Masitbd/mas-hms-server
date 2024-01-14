@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import ApiError from '../../../errors/ApiError';
-import { ISpecimen } from './specimen.interfaces';
 import { Specimen } from './specimen.model';
+import { ISpecimen } from './specimen.interfaces';
 
 // For posting new specimen information
 const createSpecimen = async (payload: ISpecimen): Promise<void | ISpecimen> => {
