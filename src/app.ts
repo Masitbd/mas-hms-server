@@ -7,8 +7,10 @@ import httpStatus from 'http-status';
 import globalErrorHandler from './app/middlewares/globalErrorHandler';
 
 const app: Application = express();
-
-app.use(cors());
+const corsOptions = {
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+};
+app.use(cors(corsOptions));
 app.use(cookieParser());
 
 app.use(express.json());

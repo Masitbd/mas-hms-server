@@ -2,8 +2,8 @@ import express from 'express';
 import validateRequest from '../../middlewares/validateRequest';
 import { DepartmentController } from './departments.controllers';
 import { departmentValidation } from './departments.validations';
-const routes = express.Router();Create-Hospital-Group
-router.post(
+const routes = express.Router();
+routes.post(
   '/',
   validateRequest(departmentValidation.createDepartmentZodSchema),
   DepartmentController.createDepartment
