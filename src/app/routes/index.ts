@@ -9,6 +9,7 @@ import { SpecimenRoutes } from '../modules/specimen/specimen.routes';
 import { VacuumRoutes } from '../modules/vacuumTube/vacuumTube.routes';
 
 const router = express.Router();
+// Comnmenting fro check
 const moduleRoutes = [
   {
     path: '/depertments',
