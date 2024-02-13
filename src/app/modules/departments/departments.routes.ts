@@ -7,11 +7,11 @@ const router = express.Router();
 router.post(
   '/create-department',
   validateRequest(departmentValidation.createDepartmentZodSchema),
-  DepartmentController.createDepartment
+  DepartmentController.createNewDepartment
 );
 router.get('/:id', DepartmentController.getSingleDepartment);
 router.get('/', DepartmentController.getAllDepartment);
 router.patch('/:id', DepartmentController.updateDepartment);
-router.delete('/:id', DepartmentController.deleteDepartment);
+router.delete('/:id', DepartmentController.removeDepartment);
 
 export const DepartmentRoutes = router;
