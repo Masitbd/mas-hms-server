@@ -3,24 +3,14 @@ import ApiError from '../../../errors/ApiError';
 import { IHospitalGroup } from './hospitalGroup.interface';
 import { HospitalGroup } from './hospitalGroup.model';
 
-const createHospitalGroup = async (
+const postHospitalGroup = async (
   payload: IHospitalGroup
 ): Promise<IHospitalGroup | null> => {
   const result = await HospitalGroup.create(payload);
   return result;
 };
-const getSingleHospitalGroup = async (
-  id: string
-): Promise<IHospitalGroup | null> => {
-  const result = await HospitalGroup.findOne({ _id: id });
-  return result;
-};
-const getAllHospitalGroup = async () => {
-  const result = await HospitalGroup.find({});
-  return result;
-};
 
-const updateHospitalGroup = async (
+const patchHospitalGroup = async (
   id: string,
   payload: Partial<IHospitalGroup>
 ): Promise<IHospitalGroup | null> => {
@@ -53,10 +43,21 @@ const deleteHospitalGroup = async (
   return result;
 };
 
+const fetchSingleHospitalGroup = async (
+  id: string
+): Promise<IHospitalGroup | null> => {
+  const result = await HospitalGroup.findOne({ _id: id });
+  return result;
+};
+const fetchAllHospitalGroup = async () => {
+  const result = await HospitalGroup.find({});
+  return result;
+};
+
 export const HospitalService = {
-  createHospitalGroup,
-  getSingleHospitalGroup,
-  getAllHospitalGroup,
-  updateHospitalGroup,
+  postHospitalGroup,
+  patchHospitalGroup,
   deleteHospitalGroup,
+  fetchSingleHospitalGroup,
+  fetchAllHospitalGroup,
 };
