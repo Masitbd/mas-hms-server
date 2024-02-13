@@ -25,7 +25,7 @@ const deleteBacteria = async (id: string) => {
   return result;
 };
 
-const getSingleBacteria = async (id: string): Promise<null | IBacteria> => {
+const fetchSingleBacteria = async (id: string): Promise<null | IBacteria> => {
   const result = await Bacteria.findOne({ _id: id });
   if (!result) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Bacteria not Found');
@@ -33,7 +33,7 @@ const getSingleBacteria = async (id: string): Promise<null | IBacteria> => {
   return result;
 };
 
-const findAllBacteria = async (): Promise<null | IBacteria[]> => {
+const fetchAllBacteria = async (): Promise<null | IBacteria[]> => {
   const result = await Bacteria.find();
   return result;
 };
@@ -41,6 +41,6 @@ export const BacteriaService = {
   postBacteria,
   patchBacteria,
   deleteBacteria,
-  findAllBacteria,
-  getSingleBacteria,
+  fetchAllBacteria,
+  fetchSingleBacteria,
 };
