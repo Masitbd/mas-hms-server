@@ -4,34 +4,13 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { ConditionService } from './condition.service';
 
-const createCondition = catchAsync(async (req: Request, res: Response) => {
+const createNewCondition = catchAsync(async (req: Request, res: Response) => {
   const result = await ConditionService.postCondition(req.body);
   sendResponse(res, {
     data: result,
     statusCode: httpStatus.OK,
     success: true,
     message: 'Condition created successfully',
-  });
-});
-
-const fetchCondition = catchAsync(async (req: Request, res: Response) => {
-  const result = await ConditionService.getCondition();
-  sendResponse(res, {
-    data: result,
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'Condition featched successfully',
-  });
-});
-
-const fetchCingleCondition = catchAsync(async (req: Request, res: Response) => {
-  const id = req.params.id;
-  const result = await ConditionService.getSingleCondition(id);
-  sendResponse(res, {
-    data: result,
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'Condition featched successfully',
   });
 });
 
@@ -45,7 +24,6 @@ const updateCondition = catchAsync(async (req: Request, res: Response) => {
     message: 'Condition updated successfully',
   });
 });
-
 const removeCondition = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id;
   const result = await ConditionService.deleteCondition(id);
@@ -56,10 +34,32 @@ const removeCondition = catchAsync(async (req: Request, res: Response) => {
     message: 'Condition deleted successfully',
   });
 });
+
+const getSIngleCondition = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id;
+  const result = await ConditionService.fetchSingleCondition(id);
+  sendResponse(res, {
+    data: result,
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Condition featched successfully',
+  });
+});
+
+const getAllCondition = catchAsync(async (req: Request, res: Response) => {
+  const result = await ConditionService.fetchAllCondition();
+  sendResponse(res, {
+    data: result,
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Condition featched successfully',
+  });
+});
+
 export const ConditionController = {
-  createCondition,
-  fetchCondition,
-  fetchCingleCondition,
+  createNewCondition,
+  getSIngleCondition,
+  getAllCondition,
   updateCondition,
   removeCondition,
 };

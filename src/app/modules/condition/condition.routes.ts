@@ -7,11 +7,11 @@ const routes = express.Router();
 routes.post(
   '/',
   validateRequest(ConditionValidation.conditionValidator),
-  ConditionController.createCondition
+  ConditionController.createNewCondition
 );
-routes.get('/', ConditionController.fetchCondition);
+routes.get('/', ConditionController.getAllCondition);
 
-routes.get('/:id', ConditionController.fetchCingleCondition);
+routes.get('/:id', ConditionController.getAllCondition);
 
 routes.patch(
   '/:id',
