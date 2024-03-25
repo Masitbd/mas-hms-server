@@ -33,7 +33,7 @@ const fetchSingleTransaction = async (data: string) => {
 };
 
 const fetchSIngleByUuid = async (data: string) => {
-  const result = await Transation.findOne({ uuid: data });
+  const result = await Transation.find({ uuid: data });
   return result;
 };
 export const TransactionService = {

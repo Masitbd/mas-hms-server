@@ -13,7 +13,6 @@ const SensitivitySchema = new Schema<ISensitivity>(
     },
     description: {
       type: String,
-      required: true,
     },
     resultOption: [
       {

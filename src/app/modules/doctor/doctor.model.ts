@@ -26,6 +26,15 @@ const doctorSchema = new Schema<IDoctor>({
   image: {
     type: String,
   },
+  account_number: {
+    type: String,
+    required: true,
+  },
+  account_id: {
+    type: Schema.Types.ObjectId, // account ---> id
+    ref: 'Account',
+    required: true,
+  },
 });
 
 export const Doctor = model('doctor', doctorSchema);

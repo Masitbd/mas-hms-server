@@ -13,7 +13,6 @@ const pdrvSchema = new Schema<IPdrv>({
   },
   description: {
     type: String,
-    required: true,
   },
 });
 

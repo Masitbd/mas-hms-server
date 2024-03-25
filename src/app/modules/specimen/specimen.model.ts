@@ -14,7 +14,6 @@ const SpecimenSchema = new Schema<ISpecimen, SpecimenModel>(
     },
     description: {
       type: String,
-      required: true,
     },
   },
   {
@@ -25,4 +24,7 @@ const SpecimenSchema = new Schema<ISpecimen, SpecimenModel>(
   }
 );
 
-export const Specimen = model<ISpecimen, SpecimenModel>('Specimens', SpecimenSchema);
+export const Specimen = model<ISpecimen, SpecimenModel>(
+  'Specimens',
+  SpecimenSchema
+);

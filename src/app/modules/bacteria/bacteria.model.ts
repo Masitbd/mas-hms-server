@@ -13,7 +13,6 @@ const BacteriaSchema = new Schema<IBacteria>({
   },
   description: {
     type: String,
-    required: true,
   },
 });
 

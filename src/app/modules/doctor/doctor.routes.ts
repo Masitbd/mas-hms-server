@@ -12,7 +12,7 @@ routes.get('/:id', DoctorControllers.getSingleDoctor);
 
 routes.post(
   '/',
-  validateRequest(DoctorValidation.DoctorValidator),
+  // validateRequest(DoctorValidation.DoctorValidator),
   DoctorControllers.createDoctor
 );
 

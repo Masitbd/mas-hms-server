@@ -17,7 +17,6 @@ const VacuumTubeSchema = new Schema<IVacuumTube, VacuumTubeModel>({
   },
   description: {
     type: String,
-    required: true,
   },
 });
 

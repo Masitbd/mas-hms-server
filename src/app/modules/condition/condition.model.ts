@@ -13,7 +13,6 @@ const ConditionSchema = new Schema<ICondition>(
     },
     description: {
       type: String,
-      required: true,
     },
   },
   {
