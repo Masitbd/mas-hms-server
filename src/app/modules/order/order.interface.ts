@@ -66,3 +66,10 @@ export type FilterableFieldsSubset = {
 //   'minTotalPrice',
 //   'maxTotalPrice'
 // )[];
+
+export type OtherFilterOptions = {
+  minDueAmount?: number;
+  maxDueAmount?: number;
+  minTotalPrice?: number;
+  maxTotalPrice?: number;
+} & Partial<IOrder>;

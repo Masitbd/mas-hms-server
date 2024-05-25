@@ -5,7 +5,11 @@ import { IPaginationOptions } from '../../../interfaces/pagination';
 import GeneratePdf from '../../../utils/PdfGenerator';
 import { ITest } from '../test/test.interfacs';
 import { orderSearchAbleFields } from './order.constant';
-import { FilterableFieldsSubset, IOrder } from './order.interface';
+import {
+  FilterableFieldsSubset,
+  IOrder,
+  OtherFilterOptions,
+} from './order.interface';
 import { Order, OrderForRegistered, OrderForUnregistered } from './order.model';
 
 const postOrder = async (params: IOrder) => {
@@ -33,7 +37,7 @@ const fetchAll = async ({
     ? Number(paginationOption.sortOrder)
     : -1;
 
-  const sortOption = { [sortBy]: sortOrder as number };
+  const sortOption: Record<string, 1 | -1> = { [sortBy]: sortOrder as 1 | -1 };
 
   const { limit, page, skip } = paginationHelpers.calculatePagination({
     page: paginationOption.page,
@@ -91,7 +95,7 @@ const fetchAll = async ({
         return;
       } else {
         condition.push({
-          [field]: otherFilterOption[field],
+          [field]: (otherFilterOption as OtherFilterOptions)[field],
         });
       }
     });
