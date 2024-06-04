@@ -25,7 +25,7 @@ const getSingleTestReport = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Test Report fetched successfully',
+      message: 'Test Report successfully',
       data: result,
     });
   }
@@ -34,11 +34,13 @@ const getSingleTestReport = catchAsync(
 const getSingleTestReportPrint = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const id = req.params.id;
+    console.log(id, '37');
+
     const result = await TestReportService.getSingleTestReportPrint(id);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Test Report fetched successfully',
+      message: 'Test Report fetched print successfully',
       data: result,
     });
   }

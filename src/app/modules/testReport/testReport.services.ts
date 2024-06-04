@@ -255,6 +255,7 @@ const createTestReport = async (
 
 // This function works for getting  a single specimen
 const getSingleTestReport = async (id: string) => {
+  console.log(id, '258');
   const result = await TestReport.findOne({ testId: id });
   if (!result) {
     throw new ApiError(httpStatus.NOT_FOUND, 'test report not found');
@@ -262,120 +263,127 @@ const getSingleTestReport = async (id: string) => {
   return result;
 };
 const getSingleTestReportPrint = async (id: string) => {
-  const result = await TestReport.findOne({ testId: id });
-  const condition = await Condition.findOne({
-    _id: result?.microbiology?.[0]?.conditions[0],
-  });
-  let bacteria: IBacteria | null = null;
-  const bacteriaId = result?.microbiology?.[0]?.bacterias?.[0];
-  if (bacteriaId !== undefined) {
-    const bacteriass = await Bacteria.findOne({
-      _id: bacteriaId,
+  try {
+    const result = await TestReport.findOne({ testId: id });
+    console.log('266 reulst', result);
+    const condition = await Condition.findOne({
+      _id: result?.microbiology?.[0]?.conditions[0],
     });
-    bacteria = bacteriass;
-  }
+    let bacteria: IBacteria | null = null;
+    const bacteriaId = result?.microbiology?.[0]?.bacterias?.[0];
+    if (bacteriaId !== undefined) {
+      const bacteriass = await Bacteria.findOne({
+        _id: bacteriaId,
+      });
+      bacteria = bacteriass;
+    }
 
-  const order = await Order.findOne({ _id: result?.orderId }).populate('refBy');
-  const patient = await Patient.findOne({ uuid: order?.uuid });
-  const test = await Test.findOne({ _id: result?.testId })
-    .populate({ path: 'department' })
-    .populate('specimen')
-    .populate('groupTests')
-    .populate('testTube')
-    .populate('hospitalGroup')
-    .populate('groupTests');
+    const order = await Order.findOne({ _id: result?.orderId }).populate(
+      'refBy'
+    );
+    const patient = await Patient.findOne({ uuid: order?.uuid });
+    const test = await Test.findOne({ _id: result?.testId })
+      .populate({ path: 'department' })
+      .populate('specimen')
+      .populate('groupTests')
+      .populate('testTube')
+      .populate('hospitalGroup')
+      .populate('groupTests');
 
-  const data = {
-    id: order?.uuid,
-    receivingDate: Date.now(),
-    patientName: patient?.name,
-    age: patient?.age,
-    sex: patient?.gender,
-    referredBy: (order?.refBy as unknown as IDoctor)?.name,
-    specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
-    department: (test?.department as unknown as IDepartment)?.reportGroupName,
-    parameterBased: result?.parameterBased?.map(item => ({
-      test: item.test,
-      result: item.result,
-      normalValue: item.normalValue !== '0' ? item.normalValue : false,
-    })),
-  };
-  // console.log('order', order);
-  console.log('test', test?.testResultType);
+    const data = {
+      id: order?.uuid,
+      receivingDate: Date.now(),
+      patientName: patient?.name,
+      age: patient?.age,
+      sex: patient?.gender,
+      referredBy: (order?.refBy as unknown as IDoctor)?.name,
+      specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
+      department: (test?.department as unknown as IDepartment)?.reportGroupName,
+      parameterBased: result?.parameterBased?.map(item => ({
+        test: item.test,
+        result: item.result,
+        normalValue: item.normalValue !== '0' ? item.normalValue : false,
+      })),
+    };
+    // console.log('order', order);
+    // console.log('test', test?.testResultType);
 
-  const microbiologyData = {
-    id: order?.uuid,
-    receivingDate: Date.now(),
-    patientName: patient?.name,
-    age: patient?.age,
-    sex: patient?.gender,
-    referredBy: (order?.refBy as unknown as IDoctor)?.name,
-    specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
-    department: (test?.department as unknown as IDepartment)?.reportGroupName,
-    colonyCountP: result?.microbiology?.[0]?.colonyCount?.powerType,
-    colonyCountT: result?.microbiology?.[0]?.colonyCount?.thenType,
-    growth: result?.microbiology?.[0]?.growth,
-    temperatures: result?.microbiology?.[0]?.temperatures,
-    time: result?.microbiology?.[0]?.duration,
-    sensitivity: result?.microbiology?.[0]?.sensitivityOptions?.map(
-      (item: { name: string; A: string; B: string; C: string }) => ({
-        name: item.name,
-        A: item.A,
-        B: item.B,
-        C: item.C,
-      })
-    ),
-    condition: condition?.value,
-    bacterias: bacteria?.value,
-  };
+    const microbiologyData = {
+      id: order?.uuid,
+      receivingDate: Date.now(),
+      patientName: patient?.name,
+      age: patient?.age,
+      sex: patient?.gender,
+      referredBy: (order?.refBy as unknown as IDoctor)?.name,
+      specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
+      department: (test?.department as unknown as IDepartment)?.reportGroupName,
+      colonyCountP: result?.microbiology?.[0]?.colonyCount?.powerType,
+      colonyCountT: result?.microbiology?.[0]?.colonyCount?.thenType,
+      growth: result?.microbiology?.[0]?.growth,
+      temperatures: result?.microbiology?.[0]?.temperatures,
+      time: result?.microbiology?.[0]?.duration,
+      sensitivity: result?.microbiology?.[0]?.sensitivityOptions?.map(
+        (item: { name: string; A: string; B: string; C: string }) => ({
+          name: item.name,
+          A: item.A,
+          B: item.B,
+          C: item.C,
+        })
+      ),
+      condition: condition?.value,
+      bacterias: bacteria?.value,
+    };
 
-  const descriptiveData = {
-    id: order?.uuid,
-    receivingDate: Date.now(),
-    patientName: patient?.name,
-    age: patient?.age,
-    sex: patient?.gender,
-    referredBy: (order?.refBy as unknown as IDoctor)?.name,
-    specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
-    department: (test?.department as unknown as IDepartment)?.reportGroupName,
-    newHTML: result?.descriptiveDataDocs?.docsContent,
-  };
+    const descriptiveData = {
+      id: order?.uuid,
+      receivingDate: Date.now(),
+      patientName: patient?.name,
+      age: patient?.age,
+      sex: patient?.gender,
+      referredBy: (order?.refBy as unknown as IDoctor)?.name,
+      specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
+      department: (test?.department as unknown as IDepartment)?.reportGroupName,
+      newHTML: result?.descriptiveDataDocs?.docsContent,
+    };
 
-  console.log(descriptiveData);
+    // console.log(descriptiveData);
 
-  const template =
-    test?.testResultType === 'parameter'
-      ? './Template/parameterBased.html'
-      : test?.testResultType === 'descriptive'
-      ? './Template/descriptive.html'
-      : './Template/Bacterial.html';
-  const templateHtml = fs.readFileSync(
-    path.resolve(__dirname, template),
-    'utf8'
-  );
-  console.log(templateHtml);
-
-  const bufferResult = await GeneratePdf({
-    data:
+    const template =
       test?.testResultType === 'parameter'
-        ? data
+        ? './Template/parameterBased.html'
         : test?.testResultType === 'descriptive'
-        ? descriptiveData
-        : microbiologyData,
-    templateHtml: templateHtml,
-    options: {
-      format: 'A4',
-      printBackground: true,
-      // margin: {
-      //   left: '0px',
-      //   top: '0px',
-      //   right: '0px',
-      //   bottom: '0px',
-      // },
-    },
-  });
-  // console.log(bufferResult);
-  return bufferResult;
+        ? './Template/descriptive.html'
+        : './Template/Bacterial.html';
+    const templateHtml = fs.readFileSync(
+      path.resolve(__dirname, template),
+      'utf8'
+    );
+    // console.log(templateHtml);
+
+    const bufferResult = await GeneratePdf({
+      data:
+        test?.testResultType === 'parameter'
+          ? data
+          : test?.testResultType === 'descriptive'
+          ? descriptiveData
+          : microbiologyData,
+      templateHtml: templateHtml,
+      options: {
+        format: 'A4',
+        printBackground: true,
+        // margin: {
+        //   left: '0px',
+        //   top: '0px',
+        //   right: '0px',
+        //   bottom: '0px',
+        // },
+      },
+    });
+    console.log('servicecomponent, 377', bufferResult);
+    return bufferResult;
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 // This function works for finding all the specimen
@@ -386,8 +394,8 @@ const getAllTestReport = async (): Promise<ITestReport[] | null> => {
 
 // This function work for deleting a single specimen
 const deleteTestReport = async (id: string) => {
-  // const result = await TestReport.findOneAndDelete({ _id: id });
-  const result = await TestReport.deleteMany();
+  const result = await TestReport.findOneAndDelete({ _id: id });
+  // const result = await TestReport.deleteMany();
   return result;
 };
 
