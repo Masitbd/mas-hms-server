@@ -6,7 +6,7 @@ import { IAccount } from './account.interface';
 import { AccountService } from './account.service';
 
 const createNewAccount = async (data: IAccount) => {
-  const result = await AccountService.postNewAccount(data);
+  const result = await AccountService.postAccount(data);
   return result;
 };
 

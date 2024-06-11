@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { paginationHelpers } from '../../../helpers/paginationHelper';
 import { IPaginationOptions } from '../../../interfaces/pagination';
-import GeneratePdf from '../../../utils/PdfGenerator';
+import { PDFGeneratorV2 } from '../../../utils/PdfGenerator.v2';
 import { ITest } from '../test/test.interfacs';
 import { orderSearchAbleFields } from './order.constant';
 import { FilterableFieldsSubset, IOrder } from './order.interface';
@@ -33,7 +33,7 @@ const fetchAll = async ({
     ? Number(paginationOption.sortOrder)
     : -1;
 
-  const sortOption = { [sortBy]: sortOrder as number };
+  const sortOption: Record<string, 1 | -1> = { [sortBy]: sortOrder as 1 | -1 };
 
   const { limit, page, skip } = paginationHelpers.calculatePagination({
     page: paginationOption.page,
@@ -91,7 +91,7 @@ const fetchAll = async ({
         return;
       } else {
         condition.push({
-          [field]: otherFilterOption[field],
+          [field]: (otherFilterOption as any)[field],
         });
       }
     });
@@ -321,7 +321,21 @@ const fetchIvoice = async (params: string) => {
     'utf8'
   );
 
-  const bufferResult = await GeneratePdf({
+  // const bufferResult = await GeneratePdf({
+  //   data: dataBinding,
+  //   templateHtml: templateHtml,
+  //   options: {
+  //     format: 'A4',
+  //     printBackground: true,
+  //     margin: {
+  //       left: '0px',
+  //       top: '0px',
+  //       right: '0px',
+  //       bottom: '0px',
+  //     },
+  //   },
+  // });
+  const bufferResult = await PDFGeneratorV2({
     data: dataBinding,
     templateHtml: templateHtml,
     options: {
