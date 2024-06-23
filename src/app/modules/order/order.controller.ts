@@ -38,7 +38,7 @@ const getAllOrder = catchAsync(
     sendResponse<IOrder[]>(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Order featched successfully',
+      message: 'Order fetched successfully',
       data: result.data,
       meta: {
         limit: result.limit,
@@ -59,7 +59,7 @@ const updateOrder = catchAsync(
     sendResponse<IOrder>(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Order featched successfully',
+      message: 'Order fetched successfully',
       data: result,
     });
   }
@@ -72,7 +72,7 @@ const getInvoice = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Order featched successfully',
+      message: 'Order fetched successfully',
       data: result,
     });
   }

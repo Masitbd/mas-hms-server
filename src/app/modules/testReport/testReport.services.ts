@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { PDFGeneratorV2 } from './../../../utils/PdfGenerator.v2';
 // import { ISpecimen } from './specimen.interfaces';
 // import { Specimen } from './specimen.model';
 
@@ -6,7 +7,6 @@ import httpStatus from 'http-status';
 import { Types } from 'mongoose';
 import path from 'path';
 import ApiError from '../../../errors/ApiError';
-import GeneratePdf from '../../../utils/PdfGenerator';
 import { IBacteria } from '../bacteria/bacteria.interface';
 import { Bacteria } from '../bacteria/bacteria.model';
 import { Condition } from '../condition/condition.model';
@@ -153,6 +153,7 @@ const createTestReport = async (
       // console.log('finaldatatosend', newTestReport);
     }
     if (payload.docsData) {
+      console.log(isExist?.descriptiveDataDocs?.docsContent === '');
       if (isExist?.descriptiveDataDocs?.docsContent === '') {
         await TestReport.updateOne(
           { testId: data.testId },
@@ -360,7 +361,7 @@ const getSingleTestReportPrint = async (id: string) => {
     );
     // console.log(templateHtml);
 
-    const bufferResult = await GeneratePdf({
+    const bufferResult = await PDFGeneratorV2({
       data:
         test?.testResultType === 'parameter'
           ? data
@@ -371,15 +372,15 @@ const getSingleTestReportPrint = async (id: string) => {
       options: {
         format: 'A4',
         printBackground: true,
-        // margin: {
-        //   left: '0px',
-        //   top: '0px',
-        //   right: '0px',
-        //   bottom: '0px',
-        // },
+        margin: {
+          left: '0px',
+          top: '0px',
+          right: '0px',
+          bottom: '0px',
+        },
       },
     });
-    console.log('servicecomponent, 377', bufferResult);
+    // console.log('servicecomponent, 377', bufferResult);
     return bufferResult;
   } catch (error) {
     console.log(error);
@@ -403,7 +404,6 @@ export const TestReportService = {
   createTestReport,
   getAllTestReport,
   getSingleTestReport,
-
   deleteTestReport,
   getSingleTestReportPrint,
 };

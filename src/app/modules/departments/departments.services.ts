@@ -14,6 +14,7 @@ const createDepartment = async (
   try {
     session.startTransaction();
 
+    payload.label = payload?.label.toUpperCase();
     payload.reportGroupName = payload?.reportGroupName.toUpperCase();
     const department = await Department.create([payload], { session });
     if (!department.length) {
@@ -31,7 +32,7 @@ const createDepartment = async (
     if (!newReportGroup.length) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'Failed to create ReportGoupr'
+        'Failed to create ReportGroup'
       );
     }
     newDepartmentData = department[0];
@@ -79,13 +80,26 @@ const deleteDepartment = async (id: string): Promise<IDepartment | null> => {
   if (!isExist) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Department not found!');
   }
-  const result = await Department.findOneAndDelete(
-    { _id: id },
-    {
-      new: true,
-    }
-  );
-  return result;
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const result = await Department.findOneAndDelete(
+      { _id: id },
+      {
+        session,
+        new: true,
+      }
+    );
+    await ReportGroup.deleteOne({ label: isExist.reportGroupName });
+
+    await session.commitTransaction();
+    await session.endSession();
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    await session.endSession();
+    throw error;
+  }
 };
 
 export const DepartmentService = {

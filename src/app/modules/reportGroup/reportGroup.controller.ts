@@ -11,7 +11,7 @@ const getAllReportGroup = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Specimen all fetched successfully',
+      message: 'Report Group all fetched successfully',
       data: result,
     });
   }
@@ -25,7 +25,7 @@ const getSingleReportGroup = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Specimen fetched successfully',
+      message: 'Report Group fetched successfully',
       data: result,
     });
   }
@@ -38,7 +38,7 @@ const createReportGroup = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Specimen was created successfully',
+      message: 'Report Group was created successfully',
       data: result,
     });
   }
@@ -54,7 +54,7 @@ const updateReportGroup = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Specimen was edited successfully',
+      message: 'Report Group was edited successfully',
       data: result,
     });
   }
@@ -67,7 +67,7 @@ const deleteReportGroup = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Specimen was deleted successfully',
+      message: 'Report Group was deleted successfully',
       data: result,
     });
   }

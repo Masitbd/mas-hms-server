@@ -13,7 +13,7 @@ const createNewPatient = catchAsync(async (req: Request, res: Response) => {
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Test successfully created',
+    message: 'Patient was created successfully',
     data: result,
     success: true,
   });
@@ -26,7 +26,7 @@ const updatePatient = catchAsync(
     sendResponse<IPatient>(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Order created successfully',
+      message: 'Patient was updated successfully',
       data: result,
     });
   }
@@ -38,7 +38,7 @@ const getSingle = catchAsync(
     sendResponse<IPatient>(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Order created successfully',
+      message: 'Single fetched was Patient Successfully',
       data: result,
     });
   }
@@ -51,7 +51,7 @@ const getAll = catchAsync(
     sendResponse<IPatient[]>(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Order created successfully',
+      message: 'Patient all fetched was Successfully',
       data: result,
     });
   }

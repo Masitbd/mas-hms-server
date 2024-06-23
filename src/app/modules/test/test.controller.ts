@@ -50,7 +50,7 @@ const getSingleTest = catchAsync(async (req: Request, res: Response) => {
   const result = await TestServices.fetchSingleTest(id);
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Test successfully Featched',
+    message: 'Test successfully Fetched',
     data: result,
     success: true,
   });
@@ -62,7 +62,7 @@ const getAllTest = catchAsync(async (req: Request, res: Response) => {
   const result = await TestServices.fetchAllTest(filters, options);
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Test successfully Featched',
+    message: 'Test successfully Fetched',
     data: result,
     success: true,
   });
