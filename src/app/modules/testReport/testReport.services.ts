@@ -59,11 +59,11 @@ type finalDataForSendBakcend = {
 
 // // For posting new specimen information
 const createTestReport = async (
-  payload: finalDataForSendBakcend
+  payload: Partial<finalDataForSendBakcend>
 ): Promise<void | ITestReport> => {
   const parameterBasedObject: Partial<IParameterBased> = {
     _id: payload.data?._id,
-    title: payload.data?.title,
+    investigation: payload.data?.title,
     test: payload.data?.test,
     hasPdrv: payload.data?.hasPdrv,
     unit: payload.data?.unit,
@@ -74,7 +74,7 @@ const createTestReport = async (
 
   const descriptive: Partial<IDescriptive> = {
     _id: payload.data?._id,
-    title: payload.data?.title,
+    investigation: payload.data?.title,
     resultDescripton: payload.resultDescripton,
   };
   const descriptiveObject: Partial<IDescriptiveDataDocs> = {

@@ -25,8 +25,8 @@ export type IMicrobiologyBacteria = {
 
 export type IDescriptive = {
   _id: string;
-  title: string;
-  resultDescripton: string;
+  investigation: string;
+  resultDescripton?: string;
 };
 export type IDescriptiveDataDocs = {
   docsContent: string;
@@ -34,7 +34,7 @@ export type IDescriptiveDataDocs = {
 };
 export type IParameterBased = {
   _id: string;
-  title: string;
+  investigation: string;
   test: string;
   hasPdrv: boolean;
   unit: string;

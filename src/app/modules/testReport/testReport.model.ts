@@ -26,9 +26,8 @@ const TestReportSchema = new Schema<ITestReport, TestReportModel>(
       },
       descriptive: [
         {
-          title: {
+          investigation: {
             type: String,
-            required: true,
           },
           resultDescripton: {
             type: String,
@@ -38,13 +37,11 @@ const TestReportSchema = new Schema<ITestReport, TestReportModel>(
     },
     parameterBased: [
       {
-        title: {
+        investigation: {
           type: String,
-          required: true,
         },
         test: {
           type: String,
-          required: true,
         },
         unit: {
           type: String,

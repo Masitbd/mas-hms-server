@@ -4,20 +4,20 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { ReportGroupServices } from './reportGroup.services';
 
-//Controller function for getting all the specimen
+//Controller function for getting all the Report Group
 const getAllReportGroup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const result = await ReportGroupServices.getAllReportGroup();
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Specimen all fetched successfully',
+      message: 'Report Group all fetched successfully',
       data: result,
     });
   }
 );
 
-// Controller function for getting a specific specimen
+// Controller function for getting a specific Report Group
 const getSingleReportGroup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const id = req.params.id;
@@ -25,7 +25,7 @@ const getSingleReportGroup = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Specimen fetched successfully',
+      message: 'Report Group single fetched successfully',
       data: result,
     });
   }
@@ -38,13 +38,13 @@ const createReportGroup = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Specimen was created successfully',
+      message: 'Report Group was created successfully',
       data: result,
     });
   }
 );
 
-// Controller function for editing existing specimen
+// Controller function for editing existing Report Group
 const updateReportGroup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const result = ReportGroupServices.updateReportGroup(
@@ -54,20 +54,20 @@ const updateReportGroup = catchAsync(
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Specimen was edited successfully',
+      message: 'Report Group was edited successfully',
       data: result,
     });
   }
 );
 
-// Controller function for remove specimen
+// Controller function for remove Report Group
 const deleteReportGroup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
     const result = ReportGroupServices.deleteReportGroup(req.params.id);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Specimen was deleted successfully',
+      message: 'Report Group was deleted successfully',
       data: result,
     });
   }

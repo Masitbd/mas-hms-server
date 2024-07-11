@@ -13,6 +13,7 @@ const createReportGroup = async (
 
 // This function works for getting  a single ReportGroup
 const getSingleReportGroup = async (id: string) => {
+  console.log(id);
   const result = await ReportGroup.findOne({ _id: id });
   if (!result) {
     throw new ApiError(httpStatus.NOT_FOUND, 'ReportGroup not found');

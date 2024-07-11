@@ -3,9 +3,9 @@ import { TestReportController } from './testReport.controller';
 const routes = express.Router();
 
 routes.post('/', TestReportController.createTestReport);
+routes.post('/:id', TestReportController.getSingleTestReportPrint);
 routes.get('/', TestReportController.getAllTestReport);
 routes.get('/:id', TestReportController.getSingleTestReport);
-routes.post('/print/:id', TestReportController.getSingleTestReportPrint);
 routes.delete('/:id', TestReportController.deleteTestReport);
 
 export const TestReportRoutes = { routes };
