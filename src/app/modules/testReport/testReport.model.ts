@@ -55,9 +55,7 @@ const TestReportSchema = new Schema<ITestReport, TestReportModel>(
         comment: {
           type: String,
         },
-        hasPdrv: {
-          type: Boolean,
-        },
+        
       },
     ],
     microbiology: [

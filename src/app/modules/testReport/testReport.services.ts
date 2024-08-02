@@ -1,19 +1,21 @@
 import fs from 'fs';
-// import { ISpecimen } from './specimen.interfaces';
-// import { Specimen } from './specimen.model';
-
+import Handlebars from 'handlebars';
 import httpStatus from 'http-status';
-import { Types } from 'mongoose';
 import path from 'path';
+
+import { ObjectId } from 'mongodb'; // Ensure you have mongodb package installed
 import ApiError from '../../../errors/ApiError';
 import GeneratePdf from '../../../utils/PdfGenerator';
 import { IBacteria } from '../bacteria/bacteria.interface';
 import { Bacteria } from '../bacteria/bacteria.model';
 import { Condition } from '../condition/condition.model';
-import { IDepartment } from '../departments/departments.interfaces';
+
+import { Types } from 'mongoose';
 import { IDoctor } from '../doctor/doctor.interface';
 import { Order } from '../order/order.model';
 import { Patient } from '../patient/patient.model';
+import { IReportGroup } from '../reportGroup/reportGroup.interfaces';
+import { ReportGroup } from '../reportGroup/reportGroup.model';
 import { ISpecimen } from '../specimen/specimen.interfaces';
 import { Test } from '../test/test.model';
 import {
@@ -25,125 +27,170 @@ import {
 } from './testReport.interfaces';
 import { TestReport } from './testReport.model';
 
-type IResultFields = {
-  title: string;
-  test: string;
-  unit: string;
-  normalValue: string;
-  defaultValue: Types.ObjectId[];
-  resultDescripton: string;
-  hasPdrv?: boolean;
-  sensitivityOptions: [];
-  conditions: Types.ObjectId[];
-  bacteria: Types.ObjectId[];
-  duration: string;
-  temperatures: string;
-  growth: boolean;
-  colonyCount?: {
-    thenType: string;
-    powerType: string;
-  };
-  _id: string;
-};
+// type IResultFields = {
+//   investigation: string;
+//   test: string;
+//   unit: string;
+//   normalValue: string;
+//   defaultValue: Types.ObjectId[];
+//   resultDescripton: string;
+//   hasPdrv?: boolean;
+//   sensitivityOptions: [];
+//   conditions: Types.ObjectId[];
+//   bacteria: Types.ObjectId[];
+//   duration: string;
+//   temperatures: string;
+//   growth: boolean;
+//   colonyCount?: {
+//     thenType: string;
+//     powerType: string;
+//   };
+//   _id: string;
+// };
 
 type finalDataForSendBakcend = {
-  testId: string;
-  orderId: string;
-  result?: string;
-  comment?: string;
+  testId: Types.ObjectId;
+  orderId: Types.ObjectId;
   resultDescripton?: string;
   type: string;
   docsData?: string;
-  data?: IResultFields;
+  // data?: IResultFields;
+  dataOfParameter?: IParameterBased[];
+  dataOfMicrobiologyBacteria?: IMicrobiologyBacteria;
+  dataOfDescriptive?: IDescriptive;
 };
 
 // // For posting new specimen information
 const createTestReport = async (
   payload: Partial<finalDataForSendBakcend>
 ): Promise<void | ITestReport> => {
-  const parameterBasedObject: Partial<IParameterBased> = {
-    _id: payload.data?._id,
-    investigation: payload.data?.title,
-    test: payload.data?.test,
-    hasPdrv: payload.data?.hasPdrv,
-    unit: payload.data?.unit,
-    normalValue: payload.data?.normalValue,
-    result: payload.result || '',
-    comment: payload.comment || '',
-  };
+  // const descriptive: Partial<IDescriptive> = {
+  //   _id: payload.data?._id,
+  //   investigation: payload.data?.investigation,
+  //   resultDescripton: payload.resultDescripton,
+  // };
 
-  const descriptive: Partial<IDescriptive> = {
-    _id: payload.data?._id,
-    investigation: payload.data?.title,
-    resultDescripton: payload.resultDescripton,
-  };
   const descriptiveObject: Partial<IDescriptiveDataDocs> = {
     docsContent: payload.docsData || '',
-    descriptive: [descriptive] as IDescriptive[],
+    descriptive: [payload.dataOfDescriptive] as IDescriptive[],
   };
-  console.log('docs', descriptiveObject);
-  const microbiologybacterialObject: Partial<IMicrobiologyBacteria> = {
-    _id: payload.data?._id,
-    bacterias: payload.data?.bacteria,
-    conditions: payload.data?.conditions,
-    sensitivityOptions: payload?.data?.sensitivityOptions,
-    colonyCount: payload.data?.colonyCount,
-    duration: payload.data?.duration,
-    growth: payload.data?.growth,
-    temperatures: payload.data?.temperatures,
-  };
+  console.log('payload', payload.dataOfParameter);
+  // const parameterBasedObject: Partial<IParameterBased[]> = [{
+  //   _id: payload.dataOfParameter._id,
+  //   investigation: payload.dataOfParameter?.investigation,
+  //   test: payload.dataOfParameter?.test,
+  //   unit: payload.dataOfParameter?.unit,
+  //   normalValue: payload.dataOfParameter?.normalValue,
+  //   result: payload.dataOfParameter.result,
+  //   comment: payload.dataOfParameter.comment,
+  // }];
+
+  // console.log('docs', descriptiveObject);
+  // const microbiologybacterialObject: Partial<IMicrobiologyBacteria> = {
+  //   _id: payload.data?._id,
+  //   bacterias: payload.data?.bacteria,
+  //   conditions: payload.data?.conditions,
+  //   sensitivityOptions: payload?.data?.sensitivityOptions,
+  //   colonyCount: payload.data?.colonyCount,
+  //   duration: payload.data?.duration,
+  //   growth: payload.data?.growth,
+  //   temperatures: payload.data?.temperatures,
+  // };
+  // if (isExistReport) {
+  //   const operation =
+  //     data.parameterBased?.map(item => ({
+  //       updateOne: {
+  //         filter: {
+  //           testId: data.testId,
+  //           parameterBased: { $elemMatch: { _id: item._id } },
+  //         },
+  //         update: {
+  //           $set: {
+  //             'parameterBased.$[elem].result': item.result,
+  //             'parameterBased.$[elem].comment': item.comment,
+  //           },
+  //         },
+  //         arrayFilters: [{ 'elem._id': item._id }],
+  //         upsert: true,
+  //       },
+  //     })) || [];
+  //   if (operation.length > 0) {
+  //     const updateBulkResult = await TestReport.bulkWrite(operation);
+  //     console.log(updateBulkResult);
+  //   }
+
+  // } else {
+  //   // console.log(data);
+  //   const newTestReport = new TestReport(data);
+  //   await newTestReport.save();
+  //   // console.log('finaldatatosend', newTestReport);
+  // }
 
   const data = {
-    testId: payload.testId,
-    orderId: payload.orderId,
-    parameterBased: payload.type === 'parameter' ? [parameterBasedObject] : [],
+    testId: new ObjectId(payload.testId),
+    orderId: new ObjectId(payload.orderId),
+    parameterBased: payload.type === 'parameter' ? payload.dataOfParameter : [],
     descriptive: payload.type === 'descriptive' ? descriptiveObject : {},
     microbiology:
-      payload.type === 'bacterial' ? [microbiologybacterialObject] : [],
+      payload.type === 'bacterial' ? [payload.dataOfMicrobiologyBacteria] : [],
   };
   // console.log(microbiologybacterialObject);
-
-  // console.log(data);
+  console.log('data109', data);
 
   if (payload.type === 'parameter') {
     // console.log('p', data);
-    const isExist = await TestReport.findOne({ testId: data.testId });
-    if (!isExist) {
-      // console.log(data);
+    const isExistReport = await TestReport.findOne({ testId: data.testId });
+
+    if (isExistReport) {
+      const parameterBasedArray = isExistReport.parameterBased ?? [];
+      data.parameterBased?.forEach(newItem => {
+        const existingItemIndex = isExistReport.parameterBased?.findIndex(
+          i => i._id.toString() === newItem._id.toString()
+        ) as number;
+        if (existingItemIndex > -1) {
+          // Update existing item
+          parameterBasedArray[existingItemIndex].result = newItem.result;
+          parameterBasedArray[existingItemIndex].comment = newItem.comment;
+        } else {
+          // Add new item
+          parameterBasedArray.push(newItem);
+        }
+      });
+      isExistReport.parameterBased = parameterBasedArray;
+      await isExistReport.save();
+    } else {
       const newTestReport = new TestReport(data);
       await newTestReport.save();
-      // console.log('finaldatatosend', newTestReport);
     }
+    // const isExistForValue = await TestReport.findOne({
+    //   parameterBased: { $elemMatch: { _id: parameterBasedObject._id } },
+    // });
+    // if (!isExistForValue) {
+    //   await TestReport.updateOne(
+    //     { testId: data.testId },
+    //     { $push: { parameterBased: parameterBasedObject } }
+    //   );
+    //   // console.log('80');
+    // } else {
+    //   // console.log(isExistForValue, '81');
+    //   const updateFields: { [key: string]: string | undefined } = {};
 
-    const isExistForValue = await TestReport.findOne({
-      parameterBased: { $elemMatch: { _id: parameterBasedObject._id } },
-    });
-    if (!isExistForValue) {
-      await TestReport.updateOne(
-        { testId: data.testId },
-        { $push: { parameterBased: parameterBasedObject } }
-      );
-      // console.log('80');
-    } else {
-      // console.log(isExistForValue, '81');
-      const updateFields: { [key: string]: string | undefined } = {};
+    //   if (parameterBasedObject.result) {
+    //     updateFields['parameterBased.$.result'] = parameterBasedObject.result;
+    //   } else {
+    //     updateFields['parameterBased.$.comment'] = parameterBasedObject.comment;
+    //   }
 
-      if (parameterBasedObject.result) {
-        updateFields['parameterBased.$.result'] = parameterBasedObject.result;
-      } else {
-        updateFields['parameterBased.$.comment'] = parameterBasedObject.comment;
-      }
-
-      await TestReport.updateOne(
-        {
-          testId: data.testId,
-          'parameterBased._id': parameterBasedObject._id,
-        },
-        {
-          $set: updateFields,
-        }
-      );
-    }
+    //   await TestReport.updateOne(
+    //     {
+    //       testId: data.testId,
+    //       'parameterBased._id': parameterBasedObject._id,
+    //     },
+    //     {
+    //       $set: updateFields,
+    //     }
+    //   );
+    // }
   } else if (payload.type === 'descriptive') {
     console.log('payload', payload);
     const isExist = await TestReport.findOne({ testId: data.testId });
@@ -173,47 +220,47 @@ const createTestReport = async (
         );
       }
     } else {
-      console.log('liver');
-      const isExistForValue = await TestReport.findOne({
-        'descriptiveDataDocs.descriptive': {
-          $elemMatch: { _id: descriptive._id },
-        },
-      });
-      console.log('182', isExistForValue);
-      if (!isExistForValue) {
-        await TestReport.updateOne(
-          { testId: data.testId },
-          { $push: { 'descriptiveDataDocs.descriptive': descriptive } }
-        );
-      } else {
-        console.log(isExistForValue, '81');
-        const updateFields: { [key: string]: string } = {};
-        if (descriptive.resultDescripton) {
-          updateFields['descriptiveDataDocs.descriptive.$.resultDescripton'] =
-            descriptive.resultDescripton;
-          await TestReport.updateOne(
-            {
-              testId: data.testId,
-              'descriptiveDataDocs.descriptive._id': descriptive._id,
-            },
-            {
-              $set: updateFields,
-            }
-          );
-        }
-      }
+      // console.log('liver');
+      // const isExistForValue = await TestReport.findOne({
+      //   'descriptiveDataDocs.descriptive': {
+      //     $elemMatch: { _id: payload?.dataOfDescriptive?._id },
+      //   },
+      // });
+      // console.log('182', isExistForValue);
+      // if (!isExistForValue) {
+      //   await TestReport.updateOne(
+      //     { testId: data.testId },
+      //     { $push: { 'descriptiveDataDocs.descriptive': payload.dataOfDescriptive } }
+      //   );
+      // } else {
+      //   console.log(isExistForValue, '81');
+      //   const updateFields: { [key: string]: string } = {};
+      //   if (payload?.dataOfDescriptive?.resultDescripton) {
+      //     updateFields['descriptiveDataDocs.descriptive.$.resultDescripton'] =
+      //       descriptive.resultDescripton;
+      //     await TestReport.updateOne(
+      //       {
+      //         testId: data.testId,
+      //         'descriptiveDataDocs.descriptive._id': descriptive._id,
+      //       },
+      //       {
+      //         $set: updateFields,
+      //       }
+      //     );
+      //   }
+      // }
     }
   } else {
-    const microbiologybacterialObject: Partial<IMicrobiologyBacteria> = {
-      _id: payload.data?._id,
-      conditions: payload.data?.conditions,
-      duration: payload.data?.duration,
-      temperatures: payload.data?.temperatures,
-      growth: payload.data?.growth,
-      colonyCount: payload.data?.colonyCount,
-      bacterias: payload.data?.bacteria,
-      sensitivityOptions: payload?.data?.sensitivityOptions,
-    };
+    // const microbiologybacterialObject: Partial<IMicrobiologyBacteria> = {
+    //   _id: payload.dataOfMicrobiologyBacteria?._id,
+    //   conditions: payload.data?.conditions,
+    //   duration: payload.data?.duration,
+    //   temperatures: payload.data?.temperatures,
+    //   growth: payload.data?.growth,
+    //   colonyCount: payload.data?.colonyCount,
+    //   bacterias: payload.data?.bacteria,
+    //   sensitivityOptions: payload?.data?.sensitivityOptions,
+    // };
     const isExist = await TestReport.findOne({ testId: data.testId });
     if (!isExist) {
       const newTestReport = new TestReport(data);
@@ -223,28 +270,21 @@ const createTestReport = async (
     await TestReport.updateOne(
       {
         testId: data.testId,
-        'microbiology._id': microbiologybacterialObject._id,
+        'microbiology._id': payload?.dataOfMicrobiologyBacteria?._id,
       },
       {
         $set: {
-          'microbiology.$': microbiologybacterialObject,
+          'microbiology.$': payload.dataOfMicrobiologyBacteria,
         },
       }
     );
-    // const ifDonethis = await TestReport.findOne({
-    //   testId: data.testId,
-    //   'microbiology._id': microbiologybacterialObject._id,
-    // });
-    // console.log('test', ifDonethis);
-
-    // console.log('ifDOne', ifDone);
-    // console.log('idf', microbiologybacterialObject);
   }
 
   //status change
   const order = await Order.findById(data.orderId);
+  console.log('orderId', order);
   const index = order?.tests.findIndex(
-    test => test.test.toString() === data.testId
+    test => test.test.toString() === data.testId.toString()
   );
 
   if (order && order.tests[index as number]) {
@@ -284,23 +324,48 @@ const getSingleTestReportPrint = async (id: string) => {
     .populate('testTube')
     .populate('hospitalGroup')
     .populate('groupTests');
+  const reportGroup = await ReportGroup.findOne({ _id: test?.reportGroup });
+  console.log('287', reportGroup);
+
+  // get unique value deafaultValues
+  const valuesInvestigation = result?.parameterBased?.map(
+    item => item.investigation
+  );
+  const uniqueInvestigation = Array.from(new Set(valuesInvestigation));
+
+  const groupedData = uniqueInvestigation.map(investigation => {
+    const items = result?.parameterBased?.filter(
+      item => item.investigation === investigation
+    );
+    return {
+      investigation,
+      tests: items?.map(item => ({
+        test: item.test,
+        result: item.result,
+        normalValueIfElse: false,
+      })),
+    };
+  });
+
+  const parameter = result?.parameterBased?.map(item => ({
+    test: item.test,
+    result: item.result,
+    normalValue: item.normalValue,
+  }));
 
   const data = {
     id: order?.uuid,
-    receivingDate: Date.now(),
+    receivingDate: new Date().toLocaleDateString(),
     patientName: patient?.name,
     age: patient?.age,
     sex: patient?.gender,
     referredBy: (order?.refBy as unknown as IDoctor)?.name,
     specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
-    department: (test?.department as unknown as IDepartment)?.label,
-    parameterBased: result?.parameterBased?.map(item => ({
-      test: item.test,
-      result: item.result,
-      normalValue: item.normalValue !== '0' ? item.normalValue : false,
-    })),
+    reportGroup: (reportGroup as unknown as IReportGroup)?.label,
+    parameterBased:
+      reportGroup?.label === 'URINE EXAMINATION' ? groupedData : parameter,
   };
-  // console.log('order', order);
+  console.log('order', data);
   console.log('test', test?.testResultType);
 
   const microbiologyData = {
@@ -311,7 +376,7 @@ const getSingleTestReportPrint = async (id: string) => {
     sex: patient?.gender,
     referredBy: (order?.refBy as unknown as IDoctor)?.name,
     specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
-    department: (test?.department as unknown as IDepartment)?.label,
+    reportGroup: (reportGroup as unknown as IReportGroup)?.label,
     colonyCountP: result?.microbiology?.[0]?.colonyCount?.powerType,
     colonyCountT: result?.microbiology?.[0]?.colonyCount?.thenType,
     growth: result?.microbiology?.[0]?.growth,
@@ -337,11 +402,15 @@ const getSingleTestReportPrint = async (id: string) => {
     sex: patient?.gender,
     referredBy: (order?.refBy as unknown as IDoctor)?.name,
     specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
-    department: (test?.department as unknown as IDepartment)?.label,
+    reportGroup: (reportGroup as unknown as IReportGroup)?.label,
     newHTML: result?.descriptiveDataDocs?.docsContent,
   };
 
   console.log(descriptiveData);
+
+  Handlebars.registerHelper('eq', function (a, b) {
+    return a === b;
+  });
 
   const template =
     test?.testResultType === 'parameter'

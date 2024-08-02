@@ -47,7 +47,7 @@ const getSingleTestReportPrint = catchAsync(
 // For creating new Test Report
 const createTestReport = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    console.log(req.body);
+
     const result = TestReportService.createTestReport(req.body);
     sendResponse(res, {
       statusCode: httpStatus.OK,

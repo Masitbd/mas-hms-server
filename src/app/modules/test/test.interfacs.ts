@@ -1,7 +1,7 @@
 import { Model, Types } from 'mongoose';
 
 type IResultFields = {
-  title: string;
+  investigation: string;
   test: string;
   unit: string;
   normalValue: string;

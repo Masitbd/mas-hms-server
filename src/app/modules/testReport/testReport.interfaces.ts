@@ -10,7 +10,7 @@ export type ITestReport = {
 };
 
 export type IMicrobiologyBacteria = {
-  _id: string;
+  _id: Types.ObjectId | string;
   duration: string;
   temperatures: string;
   conditions: Types.ObjectId[];
@@ -24,7 +24,7 @@ export type IMicrobiologyBacteria = {
 };
 
 export type IDescriptive = {
-  _id: string;
+  _id: Types.ObjectId | string;
   investigation: string;
   resultDescripton?: string;
 };
@@ -33,10 +33,9 @@ export type IDescriptiveDataDocs = {
   descriptive: IDescriptive[];
 };
 export type IParameterBased = {
-  _id: string;
+  _id: Types.ObjectId | string;
   investigation: string;
   test: string;
-  hasPdrv: boolean;
   unit: string;
   normalValue: string;
   result: string;
