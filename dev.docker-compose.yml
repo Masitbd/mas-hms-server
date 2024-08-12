@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  app:
+    build: .
+    ports:
+      - 4002:${PORT}
+    #depends_on:
+      #- mongo
+    environment:
+      - MONGO_URL=${DEV_DATABASE_URL}
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - /app/node_modules  
+    networks:
+      - mas-hms-network  
+  #mongo:
+    #restart: always
+    #image: mongo:latest    
+    
+    #ports:
+      #- 27017:27017
+    #volumes:
+      #- mongo-data:/data/db  
+volumes:
+  mongo-data:  
+
+networks:
+  mas-hms-network:
+    external: true      
