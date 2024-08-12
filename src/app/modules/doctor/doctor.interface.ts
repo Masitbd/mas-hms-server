@@ -11,6 +11,7 @@ export type IDoctor = {
   image?: string;
   account_number: string; // as account.uuid
   account_id: Types.ObjectId | IAccount; // as account_.id
+  uuid?: string;
 };
 
 export type IDoctorFilters = {

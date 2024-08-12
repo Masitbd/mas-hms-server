@@ -1,59 +1,19 @@
 import httpStatus from 'http-status';
-import mongoose from 'mongoose';
 import ApiError from '../../../errors/ApiError';
-import { IReportGroup } from '../reportGroup/reportGroup.interfaces';
-import { ReportGroup } from '../reportGroup/reportGroup.model';
 import { IDepartment } from './departments.interfaces';
 import { Department } from './departments.model';
 
 const createDepartment = async (
   payload: IDepartment
 ): Promise<IDepartment | null> => {
-  let newDepartmentData;
-  const session = await mongoose.startSession();
-  try {
-    session.startTransaction();
-
-    payload.reportGroupName = payload?.reportGroupName.toUpperCase();
-    const department = await Department.create([payload], { session });
-    if (!department.length) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Failed to department');
-    }
-
-    const reportGroup = {
-      label: '',
-      value: '',
-      description: '',
-    } as IReportGroup;
-    reportGroup.label = payload?.reportGroupName.toUpperCase();
-    reportGroup.value = payload?.reportGroupName.toLowerCase();
-    const newReportGroup = await ReportGroup.create([reportGroup], { session });
-    if (!newReportGroup.length) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        'Failed to create ReportGoupr'
-      );
-    }
-    newDepartmentData = department[0];
-    await session.commitTransaction();
-    await session.endSession();
-  } catch (error) {
-    await session.abortTransaction();
-    await session.endSession();
-    throw error;
-  }
-  return newDepartmentData;
+  return await Department.create(payload);
 };
 const getSingleDepartment = async (id: string): Promise<IDepartment | null> => {
-  console.log('id 13', id);
-  if (id === undefined) {
-    console.log('id undifined');
-  }
   const result = await Department.findOne({ _id: id });
   return result;
 };
 const getAllDepartment = async () => {
-  const result = await Department.find({});
+  const result = await Department.find();
   return result;
 };
 

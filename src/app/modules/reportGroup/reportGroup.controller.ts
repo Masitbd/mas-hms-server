@@ -34,7 +34,7 @@ const getSingleReportGroup = catchAsync(
 // For creating new ReportGroup
 const createReportGroup = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const result = ReportGroupServices.createReportGroup(req.body);
+    const result = await ReportGroupServices.createReportGroup(req.body);
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,

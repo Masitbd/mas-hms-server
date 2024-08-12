@@ -293,7 +293,7 @@ const getSingleTestReportPrint = async (id: string) => {
     sex: patient?.gender,
     referredBy: (order?.refBy as unknown as IDoctor)?.name,
     specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
-    department: (test?.department as unknown as IDepartment)?.reportGroupName,
+    department: (test?.department as unknown as IDepartment)?.label,
     parameterBased: result?.parameterBased?.map(item => ({
       test: item.test,
       result: item.result,
@@ -311,7 +311,7 @@ const getSingleTestReportPrint = async (id: string) => {
     sex: patient?.gender,
     referredBy: (order?.refBy as unknown as IDoctor)?.name,
     specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
-    department: (test?.department as unknown as IDepartment)?.reportGroupName,
+    department: (test?.department as unknown as IDepartment)?.label,
     colonyCountP: result?.microbiology?.[0]?.colonyCount?.powerType,
     colonyCountT: result?.microbiology?.[0]?.colonyCount?.thenType,
     growth: result?.microbiology?.[0]?.growth,
@@ -337,7 +337,7 @@ const getSingleTestReportPrint = async (id: string) => {
     sex: patient?.gender,
     referredBy: (order?.refBy as unknown as IDoctor)?.name,
     specimen: (test?.specimen as unknown as ISpecimen[])[0]?.label,
-    department: (test?.department as unknown as IDepartment)?.reportGroupName,
+    department: (test?.department as unknown as IDepartment)?.label,
     newHTML: result?.descriptiveDataDocs?.docsContent,
   };
 
@@ -386,8 +386,8 @@ const getAllTestReport = async (): Promise<ITestReport[] | null> => {
 
 // This function work for deleting a single specimen
 const deleteTestReport = async (id: string) => {
-  // const result = await TestReport.findOneAndDelete({ _id: id });
-  const result = await TestReport.deleteMany();
+  const result = await TestReport.findOneAndDelete({ _id: id });
+
   return result;
 };
 

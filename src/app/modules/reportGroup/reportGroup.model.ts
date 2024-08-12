@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, Types, model } from 'mongoose';
 import { IReportGroup, ReportGroupModel } from './reportGroup.interfaces';
 
 const ReportGroupSchema = new Schema<IReportGroup, ReportGroupModel>(
@@ -13,6 +13,11 @@ const ReportGroupSchema = new Schema<IReportGroup, ReportGroupModel>(
     },
     description: {
       type: String,
+    },
+    department: {
+      type: Types.ObjectId,
+      ref: 'Departments',
+      required: true,
     },
   },
   {
