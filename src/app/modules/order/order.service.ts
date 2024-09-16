@@ -113,7 +113,6 @@ const fetchAll = async ({
     });
   }
   const isCondition = condition.length > 0 ? { $and: condition } : {};
-  // console.log(JSON.stringify(condition));
 
   const result = await Order.aggregate([
     {
@@ -212,8 +211,6 @@ const fetchAll = async ({
     },
   ]);
   const totalDoc = await Order.estimatedDocumentCount();
-
-  // console.log('result', result);
 
   return {
     data: result,
@@ -343,21 +340,6 @@ const fetchIvoice = async (params: string) => {
     path.resolve(__dirname, './template.html'),
     'utf8'
   );
-
-  // const bufferResult = await GeneratePdf({
-  //   data: dataBinding,
-  //   templateHtml: templateHtml,
-  //   options: {
-  //     format: 'A4',
-  //     printBackground: true,
-  //     margin: {
-  //       left: '0px',
-  //       top: '0px',
-  //       right: '0px',
-  //       bottom: '0px',
-  //     },
-  //   },
-  // });
   const bufferResult = await PDFGeneratorV2({
     data: dataBinding,
     templateHtml: templateHtml,
