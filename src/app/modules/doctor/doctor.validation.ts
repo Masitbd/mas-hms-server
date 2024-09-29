@@ -67,6 +67,16 @@ const DoctorValidatorForUpdate = z.object({
         required_error: 'image is required',
       })
       .optional(),
+    address: z
+      .string({
+        required_error: 'Address is required',
+      })
+      .optional(),
+    assignedME: z
+      .string({
+        required_error: 'Marketing executive is required',
+      })
+      .optional(),
   }),
 });
 
