@@ -36,11 +36,15 @@ const PatientSchema = new Schema<IPatient>(
 
 PatientSchema.pre('save', async function (next) {
   const patient: IPatient = this as IPatient;
+  const date = new Date();
+  const month = date.getMonth().toString().padStart(2, '0');
+  const year = date.getUTCFullYear().toString().slice(2, 4);
   const lastPatient = await Patient.find().sort({ uuid: -1 }).limit(1);
   const uuid =
     lastPatient.length > 0 ? Number(lastPatient[0].uuid?.split('-')[2]) : 0;
 
-  const newUUid = 'HMS-' + 'P-' + String(Number(uuid) + 1).padStart(7, '0');
+  const newUUid =
+    'R-' + month + year + '-' + String(Number(uuid) + 1).padStart(7, '0');
   patient.uuid = newUUid;
   next();
 });

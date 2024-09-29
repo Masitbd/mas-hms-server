@@ -35,12 +35,17 @@ import {
 } from './order.utils';
 
 const postOrder = async (params: IOrder) => {
-  const order: IOrder = params;
-  const lastOrder = await Order.find().sort({ oid: -1 }).limit(1);
-  const oid =
-    lastOrder.length > 0 ? Number(lastOrder[0].oid?.split('-')[1]) : 0;
+  const date = new Date();
+  const month = date.getMonth().toString().padStart(2, '0');
+  const year = date.getUTCFullYear().toString().slice(2, 4);
 
-  const newOid = 'HMS-' + String(Number(oid) + 1).padStart(7, '0');
+  const order: IOrder = params;
+  const lastOrder = await Order.find().sort({ createdAt: -1 }).limit(1);
+  const oid =
+    lastOrder.length > 0 ? Number(lastOrder[0].oid?.split('-')[2]) : 0;
+
+  const newOid =
+    'H-' + month + year + '-' + String(Number(oid) + 1).padStart(7, '0');
   order.oid = newOid;
 
   // evaluating total price
