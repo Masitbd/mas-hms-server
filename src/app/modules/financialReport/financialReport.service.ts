@@ -1,4 +1,4 @@
-import { PipelineStage } from 'mongoose';
+import { PipelineStage, Types } from 'mongoose';
 import { Doctor } from '../doctor/doctor.model';
 import { Order } from '../order/order.model';
 import { Test } from '../test/test.model';
@@ -137,8 +137,34 @@ const fetchAllTest = async () => {
     },
   ]);
 };
-const feacthALlDoctor = async () => {
+const feacthALlDoctor = async (params: { id: string }) => {
+  const id = params?.id ?? null;
+  const conditionBasedOnParams = id
+    ? {
+        $match: {
+          'assignedME._id': { $eq: new Types.ObjectId(id) },
+        },
+      }
+    : {
+        $match: {
+          assignedME: { $ne: null },
+        },
+      };
+
   return await Doctor.aggregate([
+    {
+      $lookup: {
+        from: 'employeeregistrations',
+        localField: 'assignedME',
+        foreignField: '_id',
+        as: 'assignedME',
+      },
+    },
+    {
+      $unwind: '$assignedME',
+    },
+    conditionBasedOnParams,
+
     {
       $project: {
         code: 1,
@@ -146,6 +172,7 @@ const feacthALlDoctor = async () => {
         title: 1,
         phone: 1,
         address: 1,
+        assignedME: 1,
       },
     },
   ]);

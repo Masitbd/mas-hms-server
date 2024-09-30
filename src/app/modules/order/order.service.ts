@@ -507,7 +507,6 @@ const fetchIvoice = async (params: string) => {
     const md = defaultMargin?.value?.split(',').map(m => Number(m));
     marginValue = md as number[];
   }
-  console.log(companyInfo);
 
   const dataBinding = await {
     items: items,
