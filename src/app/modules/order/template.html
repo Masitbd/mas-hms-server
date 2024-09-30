@@ -1,4 +1,9 @@
 <style>
+   *{
+   box-sizing: border-box;
+   margin: 0;
+   padding: 0
+   }
 
     .invoice-box {
         max-width: auto;
@@ -83,20 +88,29 @@
             text-align: center;
         }
     }
+     .logoImage{
+        height: 100px;
+        width: 100px;
+    }
 
     @media print {
         @page {
 
             size: A5;
             orientation: landscape;
-            margin-right:3px ;
-            margin-left: 3px; 
-            margin-top: 0;           
+            margin: 0;
+            padding: 0;    
         }
         .invoice-box table{
             font-size: smaller;
             line-height: normal;
         }
+         .logoImage{
+        height: 40px;
+        width: 40px;
+        margin: 0;
+        padding: 0;
+    }
     }
 
     /** RTL **/
@@ -112,6 +126,7 @@
     .rtl table tr td:nth-child(2) {
         text-align: left;
     }
+   
 
     /* .di{
         position: fixed;
@@ -133,18 +148,28 @@
    
     
   
-    <div class="invoice-box">
+<div class="invoice-box"
+    style="margin-top: {{marginValue.top}}px; margin-right: {{marginValue.right}}px; margin-left: {{marginValue.left}}px; margin-bottom: {{marginValue.bottom}}px;">
+    <table cellpadding="0" cellspacing="0">
  
         <table cellpadding="0" cellspacing="0">
             <caption>
+               {{#if companyInfo}}
+
                 <div style="text-align: center; border-bottom: 2px solid black;">
-                    <h1>Hospital Management System</h1>
+                   {{#if companyInfo.photoUrl}}
+                    <img src="{{companyInfo.photoUrl}}" alt="" class="logoImage">
+                    {{/if}}
+                    <h1 style="margin-bottom: 5px;">{{companyInfo.name}}</h1>
                     <p>
-                        Block - JHA, Mirpur - 6, Dhaka - 1216. Dhaka <br>
-                        Phone: +880 171 333 4444 <br>
+                       {{companyInfo.address}} <br>
+                       {{companyInfo.phone}}<br>
                     </p>
-                   
+
+                    
+                
                 </div>
+                {{/if}}
             </caption>
            
 
