@@ -17,7 +17,9 @@ const createCompanyInfoIntoDB = async (payload: TCompanyInfo) => {
 // get info
 
 const getCompanyInfoFromDB = async () => {
-  const result = await CompanyInfo.findOne({});
+  const result = await CompanyInfo.findOne({
+    default: true,
+  });
   return result;
 };
 
