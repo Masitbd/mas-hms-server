@@ -43,10 +43,66 @@ const updateCompanyInfo = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getCloudinarySecret = catchAsync(async (req: Request, res: Response) => {
+  const result = await CompanyInfoServices.getCloudinarySecret();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Cloudinary secreat feacthed Successfully',
+    data: result,
+  });
+});
+
+const getCreatable = catchAsync(async (req: Request, res: Response) => {
+  const result = await CompanyInfoServices.creatable();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Confermation Featched  Successfully',
+    data: result,
+  });
+});
+
+const deleteCompanyInfo = catchAsync(async (req: Request, res: Response) => {
+  const result = await CompanyInfoServices.deleteCompanyInfo(req.params.id);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Company info deleted successfully',
+    data: result,
+  });
+});
+
+const getSingleCompanyInfo = catchAsync(async (req: Request, res: Response) => {
+  const result = await CompanyInfoServices.getSingleCompanyInfo(req.params.id);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Single company info retrived  Successfully',
+    data: result,
+  });
+});
+
+const getDefaultCompanyInfo = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await CompanyInfoServices.getDefaultCompanyInfo();
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Default  company info retrived  Successfully',
+      data: result,
+    });
+  }
+);
 // exports
 
 export const CompanyInfoControllers = {
   createCompanyInfo,
   getCompanyInfo,
   updateCompanyInfo,
+  getCloudinarySecret,
+  getCreatable,
+  deleteCompanyInfo,
+  getDefaultCompanyInfo,
+  getSingleCompanyInfo,
 };

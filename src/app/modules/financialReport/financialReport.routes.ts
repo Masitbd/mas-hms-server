@@ -40,4 +40,11 @@ routes.get(
 );
 routes.get('/employeeLedger', FinancialReportController.getEmployeeLedger);
 
+routes.get('/tests', FinancialReportController.getAllTests);
+routes.get('/doctors', FinancialReportController.getAllDoctors);
+routes.get(
+  '/marketing-executive-performance',
+  FinancialReportController.marketingExecutivePerformance
+);
+
 export const FinancialReportRoutes = { routes };

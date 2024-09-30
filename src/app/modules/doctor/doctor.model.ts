@@ -29,6 +29,14 @@ const doctorSchema = new Schema<IDoctor>({
   image: {
     type: String,
   },
+  address: {
+    type: String,
+  },
+  assignedME: {
+    type: Schema.Types.ObjectId,
+    ref: 'EmployeeRegistration',
+    required: true,
+  },
   account_number: {
     type: String,
     required: true,

@@ -51,7 +51,8 @@ const testSchema = new Schema<ITest, TestModel>(
       },
     ],
     reportGroup: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: 'reportGroup',
     },
     hospitalGroup: {
       type: Schema.Types.ObjectId,

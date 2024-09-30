@@ -2335,3 +2335,309 @@ export const newBillSummeryPipeline = (
     },
   ];
 };
+
+export const employeePerfromanceSummeryPipeline = (
+  params: Record<string, any>
+): PipelineStage[] => {
+  const from = params.from ? new Date(params.from) : new Date();
+  const toDate = params.to ? new Date(params.to) : new Date();
+  // from.setHours(0, 0, 0, 0);
+
+  toDate.setUTCHours(23, 59, 59, 999);
+  return [
+    {
+      $match: {
+        refBy: {
+          $ne: null,
+        },
+        createdAt: {
+          $gte: from,
+          $lte: toDate,
+        },
+      },
+    },
+    {
+      $unwind: '$refBy',
+    },
+    {
+      $lookup: {
+        from: 'doctors',
+        localField: 'refBy',
+        foreignField: '_id',
+        as: 'refBy',
+      },
+    },
+    {
+      $unwind: '$refBy',
+    },
+    {
+      $match: {
+        'refBy.assignedME': { $ne: null },
+      },
+    },
+    {
+      $lookup: {
+        from: 'employeeregistrations',
+        localField: 'refBy.assignedME',
+        foreignField: '_id',
+        as: 'marketingExecutive',
+      },
+    },
+    {
+      $unwind: '$marketingExecutive',
+    },
+    {
+      $unwind: '$tests',
+    },
+    {
+      $lookup: {
+        from: 'tests',
+        localField: 'tests.test',
+        foreignField: '_id',
+        as: 'td',
+      },
+    },
+    {
+      $unwind: {
+        path: '$td',
+      },
+    },
+    {
+      $match: {
+        $and: [
+          {
+            'tests.status': { $ne: 'refunded' },
+          },
+          { 'tests.status': { $ne: 'free' } },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        pd: {
+          $cond: {
+            if: {
+              $or: [
+                { $gt: ['$parcentDiscount', 0] },
+                { $gt: ['$tests.discount', 0] },
+              ],
+            },
+            then: {
+              $cond: {
+                if: { $gt: ['$tests.discount', 0] },
+                then: {
+                  $divide: [
+                    { $multiply: ['$td.price', '$tests.discount'] },
+                    100,
+                  ],
+                },
+                else: {
+                  $cond: {
+                    if: { $gt: ['$parcentDiscount', 0] },
+                    then: {
+                      $divide: [
+                        { $multiply: ['$td.price', '$parcentDiscount'] },
+                        100,
+                      ],
+                    },
+                    else: 0,
+                  },
+                },
+              },
+            },
+            else: 0,
+          },
+        },
+        cd: {
+          $cond: {
+            if: { $gt: ['$cashDiscount', 0] },
+            then: {
+              $floor: {
+                $multiply: [
+                  {
+                    $divide: [
+                      '$cashDiscount',
+                      {
+                        $subtract: [
+                          '$totalPrice',
+                          { $ifNull: ['$tubePrice', 0] },
+                        ],
+                      },
+                    ],
+                  },
+                  '$td.price',
+                ],
+              },
+            },
+            else: 0,
+          },
+        },
+
+        pa: {
+          $cond: {
+            if: { $gt: ['paid', 0] },
+            then: {
+              $floor: {
+                $multiply: [{ $divide: ['$paid', '$totalPrice'] }, '$td.price'],
+              },
+            },
+            else: 0,
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        totalDiscount: {
+          $add: ['$pd', '$cd'],
+        },
+      },
+    },
+    {
+      $addFields: {
+        va: {
+          $ceil: {
+            $cond: {
+              if: { $gt: ['$vat', 0] },
+              then: {
+                $divide: [
+                  {
+                    $multiply: [
+                      { $subtract: ['$td.price', { $add: ['$pd', '$cd'] }] },
+                      '$vat',
+                    ],
+                  },
+                  100,
+                ],
+              },
+              else: 0,
+            },
+          },
+        },
+
+        vatOnTube: {
+          $cond: {
+            if: { $gt: ['$tubePrice', 0] },
+            then: {
+              $multiply: [{ $divide: ['$vat', 100] }, '$tubePrice'],
+            },
+            else: 0,
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        totalVat: { $add: ['$vatOnTube', '$va'] },
+      },
+    },
+    {
+      $lookup: {
+        from: 'patients',
+        localField: 'uuid',
+        foreignField: 'uuid',
+        as: 'patientData',
+      },
+    },
+    {
+      $addFields: {
+        pd: {
+          $cond: {
+            if: { $eq: ['$patientType', 'registered'] },
+            then: '$patientData',
+            else: ['$patient'],
+          },
+        },
+      },
+    },
+    {
+      $unwind: '$pd',
+    },
+
+    {
+      $addFields: {
+        patient: '$pd.name',
+        marketingExecutive: '$marketingExecutive.name',
+        doctor: '$refBy.name',
+      },
+    },
+    {
+      $group: {
+        _id: '$oid',
+        totalPrice: { $first: '$totalPrice' },
+        totalDiscount: { $sum: '$totalDiscount' },
+        paid: { $first: '$paid' },
+        doctor: { $first: '$doctor' },
+        patient: { $first: '$patient' },
+        marketingExecutive: { $first: '$marketingExecutive' },
+        createdAt: { $first: '$createdAt' },
+        oid: { $first: '$oid' },
+        vat: { $sum: '$va' },
+        vatOnTube: { $first: '$vatOnTube' },
+        MEId: { $first: '$refBy.assignedME' }, //ME = Marketing executive
+      },
+    },
+    params?.id
+      ? {
+          $match: {
+            MEId: { $eq: new Types.ObjectId(params?.id) },
+          },
+        }
+      : {
+          $match: {
+            MEId: { $ne: null },
+          },
+        },
+    {
+      $addFields: {
+        totalVat: {
+          $add: ['$vat', '$vatOnTube'],
+        },
+      },
+    },
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+
+    {
+      $facet: {
+        mainDocs: [
+          {
+            $project: {
+              totalPrice: 1,
+              totalDiscount: 1,
+              paid: 1,
+              doctor: 1,
+              patient: 1,
+              marketingExecutive: 1,
+              createdAt: 1,
+              oid: 1,
+              MEId: 1,
+              totalVat: 1,
+            },
+          },
+        ],
+        totalDocs: [
+          {
+            $group: {
+              _id: null,
+              totalPrice: { $sum: '$totalPrice' },
+              totalDiscount: { $sum: '$totalDiscount' },
+              paid: { $sum: '$paid' },
+              totalVat: { $sum: '$totalVat' },
+              patient: { $sum: 1 },
+            },
+          },
+          {
+            $addFields: {
+              oid: 'Total',
+              marketingExecutive: 'Total',
+            },
+          },
+        ],
+      },
+    },
+  ];
+};

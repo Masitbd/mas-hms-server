@@ -6,7 +6,8 @@ const companyInfoSchema = new Schema<TCompanyInfo>({
   address: { type: String, required: true },
   phone: { type: String, required: true },
   period: { type: String, required: true },
-  photoUrl: { type: String, required: true },
+  photoUrl: { type: String },
+  publicId: { type: String }, // For cloudinary image
   default: { type: Boolean },
 });
 

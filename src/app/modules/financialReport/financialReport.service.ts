@@ -1,5 +1,7 @@
 import { PipelineStage } from 'mongoose';
+import { Doctor } from '../doctor/doctor.model';
 import { Order } from '../order/order.model';
+import { Test } from '../test/test.model';
 import { Transation } from '../transaction/transaction.model';
 import {
   clientWiseIncomeStatementPipeline,
@@ -10,6 +12,7 @@ import {
   doctorPerformanceSummeryDeptWisePipeline,
   doctorPerformanceSummeryPipeline,
   doctorPerformanceSummeryTestWisePipeline,
+  employeePerfromanceSummeryPipeline,
   newBillSummeryPipeline,
   pipelineForOverAllDoctor,
   refByWiseIncomeStatementPipeline,
@@ -107,6 +110,60 @@ const getEmployeeLedger = async (params: { from: Date; to: Date }) => {
   return result;
 };
 
+const fetchAllTest = async () => {
+  return await Test.aggregate([
+    {
+      $lookup: {
+        from: 'departments',
+        localField: 'department',
+        foreignField: '_id',
+        as: 'dd',
+      },
+    },
+    {
+      $unwind: '$dd',
+    },
+    {
+      $group: {
+        _id: '$dd.label',
+        tests: {
+          $push: {
+            label: '$label',
+            price: '$price',
+            testCode: '$testCode',
+          },
+        },
+      },
+    },
+  ]);
+};
+const feacthALlDoctor = async () => {
+  return await Doctor.aggregate([
+    {
+      $project: {
+        code: 1,
+        name: 1,
+        title: 1,
+        phone: 1,
+        address: 1,
+      },
+    },
+  ]);
+};
+
+const marketingExecutivePerformance = async (params: {
+  from: Date;
+  to: Date;
+  id: string;
+}) => {
+  return await Order.aggregate(
+    employeePerfromanceSummeryPipeline({
+      from: params.from,
+      to: params.to,
+      id: params.id,
+    })
+  );
+};
 export const FinancialReportService = {
   fetchOverAllComission,
   fetchDoctorPerformanceSummery,
@@ -118,4 +175,7 @@ export const FinancialReportService = {
   clientWiseIncomeStatement,
   refByWIseIncomeStatement,
   getEmployeeLedger,
+  fetchAllTest,
+  feacthALlDoctor,
+  marketingExecutivePerformance,
 };

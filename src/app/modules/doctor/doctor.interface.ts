@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import { IAccount } from '../account/account.interface';
+import { IEmployeeRegistration } from '../employeeRegistration/employeeRegistration.interface';
 
 export type IDoctor = {
   title: string;
@@ -13,6 +14,8 @@ export type IDoctor = {
   account_number: string; // as account.uuid
   account_id: Types.ObjectId | IAccount; // as account_.id
   uuid?: string;
+  address?: string;
+  assignedME: Types.ObjectId | IEmployeeRegistration;
 };
 
 export type IDoctorFilters = {

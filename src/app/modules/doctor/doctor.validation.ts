@@ -33,6 +33,16 @@ const DoctorValidator = z.object({
         required_error: 'image is required',
       })
       .optional(),
+    address: z
+      .string({
+        required_error: 'Address is required',
+      })
+      .optional(),
+    assignedME: z
+      .string({
+        required_error: 'Marketing executinve is required',
+      })
+      .optional(),
   }),
 });
 const DoctorValidatorForUpdate = z.object({
@@ -44,7 +54,7 @@ const DoctorValidatorForUpdate = z.object({
       .optional(),
     fatherName: z
       .string({
-        required_error: 'Father Name is required',
+        required_error: 'Father name is required',
       })
       .optional(),
     email: z
@@ -65,6 +75,16 @@ const DoctorValidatorForUpdate = z.object({
     image: z
       .string({
         required_error: 'image is required',
+      })
+      .optional(),
+    address: z
+      .string({
+        required_error: 'Address is required',
+      })
+      .optional(),
+    assignedME: z
+      .string({
+        required_error: 'Marketing executinve is required',
       })
       .optional(),
   }),

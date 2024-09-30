@@ -5,4 +5,5 @@ export type TCompanyInfo = {
   period: string;
   default: boolean;
   photoUrl: string;
+  publicId: string; // For cloudinary image
 };

@@ -182,6 +182,45 @@ const getEmployeeLedger = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getAllTests = catchAsync(async (req: Request, res: Response) => {
+  const result = await FinancialReportService.fetchAllTest();
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Tests featched successfully',
+    data: result,
+  });
+});
+
+const getAllDoctors = catchAsync(async (req: Request, res: Response) => {
+  const result = await FinancialReportService.feacthALlDoctor();
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'DOctors featched successfully',
+    data: result,
+  });
+});
+
+const marketingExecutivePerformance = catchAsync(
+  async (req: Request, res: Response) => {
+    const filteredField = pick(req.query, ['from', 'to', 'id']);
+    const result = await FinancialReportService.marketingExecutivePerformance({
+      from: filteredField.from as unknown as Date,
+      to: filteredField.to as unknown as Date,
+      id: filteredField.id as string,
+    });
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Marketing Executive Performance featched successfully',
+      data: result,
+    });
+  }
+);
 export const FinancialReportController = {
   getOverAllComission,
   getDoctorPerformanceSUmmery,
@@ -193,4 +232,7 @@ export const FinancialReportController = {
   clientWiseIncomeStatement,
   refByWiseIncomeStatement,
   getEmployeeLedger,
+  getAllTests,
+  getAllDoctors,
+  marketingExecutivePerformance,
 };

@@ -7,7 +7,6 @@ import { PatientService } from './patient.service';
 
 const createNewPatient = catchAsync(async (req: Request, res: Response) => {
   const testData = req.body;
-  console.log(testData);
   const result = await PatientService.postPatient(
     testData as unknown as IPatient
   );

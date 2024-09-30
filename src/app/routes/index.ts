@@ -6,6 +6,8 @@ import { CompanyInfoRoutes } from '../modules/componayInfo/companyInfo.routes';
 import { ConditionRoutes } from '../modules/condition/condition.routes';
 import { DepartmentRoutes } from '../modules/departments/departments.routes';
 import { DoctorRoutes } from '../modules/doctor/doctor.routes';
+import { EmployeeRegistrationRoutes } from '../modules/employeeRegistration/employeeRegistration.routes';
+
 import { DoctorSealRoutes } from '../modules/doctorSeal/seal.routes';
 import { FinancialReportRoutes } from '../modules/financialReport/financialReport.routes';
 import { HospitalGroupRoutes } from '../modules/hospitalGroup/hospitalGroup.routes';
@@ -67,6 +69,10 @@ const moduleRoutes = [
   {
     path: '/test',
     route: TestRoutes.routes,
+  },
+  {
+    path: '/employeeRegistration',
+    route: EmployeeRegistrationRoutes.routes,
   },
   {
     path: '/transaction',

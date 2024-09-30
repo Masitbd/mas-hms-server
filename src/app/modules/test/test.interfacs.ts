@@ -27,7 +27,7 @@ export type ITest = {
   type: string;
   hasTestTube: boolean;
   testTube: Types.ObjectId[];
-  reportGroup: string;
+  reportGroup: Types.ObjectId;
   hospitalGroup: Types.ObjectId;
   price: number;
   isGroupTest: boolean;
