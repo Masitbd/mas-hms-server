@@ -665,7 +665,22 @@ const fetchSingle = async (params: string) => {
         preserveNullAndEmptyArrays: true,
       },
     },
-
+    {
+      $lookup: {
+        from: 'specimens',
+        localField: 'testData.specimen',
+        foreignField: '_id',
+        as: 'testData.specimen',
+      },
+    },
+    {
+      $lookup: {
+        from: 'reporttypes',
+        localField: 'testData.resultFields',
+        foreignField: '_id',
+        as: 'testData.resultFields',
+      },
+    },
     {
       $group: {
         _id: '$_id',

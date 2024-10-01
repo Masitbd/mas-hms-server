@@ -300,8 +300,6 @@ const getSingleTestReportPrint = async (id: string) => {
       normalValue: item.normalValue !== '0' ? item.normalValue : false,
     })),
   };
-  // console.log('order', order);
-  console.log('test', test?.testResultType);
 
   const microbiologyData = {
     id: order?.uuid,
