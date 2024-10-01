@@ -124,8 +124,42 @@ const fetchAllTest = async () => {
       $unwind: '$dd',
     },
     {
+      $addFields: {
+        rg: {
+          $cond: {
+            if: { $eq: [{ $type: '$reportGroup' }, 'string'] },
+            then: {
+              $cond: {
+                if: { $eq: [{ $strLenCP: '$reportGroup' }, 24] },
+                then: { $toObjectId: '$reportGroup' },
+                else: null,
+              },
+            },
+            else: '$reportGroup',
+          },
+        },
+      },
+    },
+
+    {
+      $lookup: {
+        from: 'reportgroups',
+        localField: 'rg',
+        foreignField: '_id',
+        as: 'rgd',
+      },
+    },
+    {
+      $unwind: '$rgd',
+    },
+    {
       $group: {
-        _id: '$dd.label',
+        _id: {
+          department: '$dd.label',
+          departmentId: '$dd._id',
+          reportGroup: '$rgd.label',
+          reportGroupId: '$rgd._id',
+        },
         tests: {
           $push: {
             label: '$label',
@@ -134,6 +168,9 @@ const fetchAllTest = async () => {
           },
         },
       },
+    },
+    {
+      $sort: { '_id.department': -1 },
     },
   ]);
 };
