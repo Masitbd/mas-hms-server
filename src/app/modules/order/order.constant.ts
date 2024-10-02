@@ -9,6 +9,7 @@ export const orderFilterableFields: IorderFilterableFields[] = [
   'minTotalPrice',
   'maxTotalPrice',
   'oid',
+  'postedBy',
 ];
 
 export const orderSearchAbleFields = [

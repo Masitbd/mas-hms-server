@@ -6,37 +6,47 @@ const routes = express.Router();
 
 routes.post(
   '/',
-  auth(
-    ENUM_USER_PEMISSION.ADMIN,
-    ENUM_USER_PEMISSION.SUPER_ADMIN,
-    ENUM_USER_PEMISSION.MANAGE_ORDER
-  ),
+  auth(ENUM_USER_PEMISSION.MANAGE_ORDER),
   OrderController.createNewOrder
 );
+
+routes.get(
+  '/order-posted-by',
+  auth(ENUM_USER_PEMISSION.USER),
+  OrderController.getOrderPostedBy
+);
 // income
-routes.post('/income-statement', OrderController.getIncomeStatement);
+routes.post(
+  '/income-statement',
+  auth(ENUM_USER_PEMISSION.USER),
+  OrderController.getIncomeStatement
+);
 // due detials
-routes.get('/due-details', OrderController.getDueDetails);
-routes.get('/', OrderController.getAllOrder);
-routes.get('/:oid', OrderController.getSIngle);
-routes.patch('/:id', OrderController.updateOrder);
-routes.get('/invoice/:oid', OrderController.getInvoice);
+routes.get(
+  '/due-details',
+  auth(ENUM_USER_PEMISSION.USER),
+  OrderController.getDueDetails
+);
+routes.get('/', auth(ENUM_USER_PEMISSION.USER), OrderController.getAllOrder);
+routes.get('/:oid', auth(ENUM_USER_PEMISSION.USER), OrderController.getSIngle);
+routes.patch(
+  '/:id',
+  auth(ENUM_USER_PEMISSION.MANAGE_ORDER),
+  OrderController.updateOrder
+);
+routes.get(
+  '/invoice/:oid',
+  auth(ENUM_USER_PEMISSION.USER),
+  OrderController.getInvoice
+);
 routes.patch(
   '/dewCollection/:oid',
-  auth(
-    ENUM_USER_PEMISSION.ADMIN,
-    ENUM_USER_PEMISSION.SUPER_ADMIN,
-    ENUM_USER_PEMISSION.MANAGE_ORDER
-  ),
+  auth(ENUM_USER_PEMISSION.MANAGE_ORDER),
   OrderController.dueCollection
 );
 routes.post(
   '/statusChange/:oid',
-  auth(
-    ENUM_USER_PEMISSION.ADMIN,
-    ENUM_USER_PEMISSION.SUPER_ADMIN,
-    ENUM_USER_PEMISSION.MANAGE_ORDER
-  ),
+  auth(ENUM_USER_PEMISSION.MANAGE_ORDER),
   OrderController.statusChanger
 );
 

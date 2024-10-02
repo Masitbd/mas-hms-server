@@ -222,6 +222,7 @@ const fetchAll = async ({
       }
     });
   }
+
   const isCondition = condition.length > 0 ? { $and: condition } : {};
 
   const result = await Order.aggregate(
@@ -1438,6 +1439,34 @@ const getDueBillsDetailFromDB = async (query: Record<string, any>) => {
   return result;
 };
 
+const fetchOrderPostedBy = async () => {
+  return await Order.aggregate([
+    {
+      $match: {
+        postedBy: { $ne: null },
+      },
+    },
+    {
+      $project: {
+        postedBy: 1,
+      },
+    },
+    {
+      $lookup: {
+        from: 'profiles',
+        localField: 'postedBy',
+        foreignField: 'uuid',
+        as: 'postedBy',
+      },
+    },
+    {
+      $unwind: '$postedBy',
+    },
+    {
+      $group: { _id: '$postedBy.uuid', name: { $first: '$postedBy.name' } },
+    },
+  ]);
+};
 export const OrderService = {
   postOrder,
   fetchAll,
@@ -1448,4 +1477,5 @@ export const OrderService = {
   singleOrderstatusChanger,
   getIncomeStatementFromDB,
   getDueBillsDetailFromDB,
+  fetchOrderPostedBy,
 };
