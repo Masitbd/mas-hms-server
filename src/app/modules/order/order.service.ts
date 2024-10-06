@@ -10,6 +10,7 @@ import { ENUM_TEST_STATUS } from '../../../enums/testStatusEnum';
 import ApiError from '../../../errors/ApiError';
 import { paginationHelpers } from '../../../helpers/paginationHelper';
 import { IPaginationOptions } from '../../../interfaces/pagination';
+import { orderIdGenerator } from '../../../utils/OrderIdGenerator';
 import { PDFGeneratorV2 } from '../../../utils/PdfGenerator.v2';
 import { Account } from '../account/account.model';
 import { CompanyInfo } from '../componayInfo/companyInfo.model';
@@ -37,17 +38,10 @@ import {
 } from './order.utils';
 
 const postOrder = async (params: IOrder) => {
-  const date = new Date();
-  const month = date.getMonth().toString().padStart(2, '0');
-  const year = date.getUTCFullYear().toString().slice(2, 4);
+  const newOid = await orderIdGenerator().then(id => id);
 
   const order: IOrder = params;
-  const lastOrder = await Order.find().sort({ createdAt: -1 }).limit(1);
-  const oid =
-    lastOrder.length > 0 ? Number(lastOrder[0].oid?.split('-')[2]) : 0;
 
-  const newOid =
-    'H-' + month + year + '-' + String(Number(oid) + 1).padStart(7, '0');
   order.oid = newOid;
 
   // evaluating total price

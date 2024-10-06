@@ -23,7 +23,6 @@ const auth =
 
       req.user = verifiedUser; // role  , userid
       if (
-        verifiedUser?.permissions?.includes(ENUM_USER_PEMISSION.ADMIN) ||
         verifiedUser?.permissions?.includes(ENUM_USER_PEMISSION.SUPER_ADMIN)
       ) {
         next();
