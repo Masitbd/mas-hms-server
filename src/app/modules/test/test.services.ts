@@ -42,7 +42,11 @@ const fetchSingleTest = async (id: string) => {
   return result;
 };
 
-const fetchAllTest = async (filterOption: any, options: any) => {
+const fetchAllTest = async (
+  filterOption: any,
+  options: any,
+  flag: { flag: string }
+) => {
   const { searchTerm, ...filterOptions } = filterOption;
   const andConditions = [];
   if (searchTerm) {
@@ -71,16 +75,29 @@ const fetchAllTest = async (filterOption: any, options: any) => {
   const isCondition = andConditions.length > 0 ? { $and: andConditions } : {};
   const total = await Test.estimatedDocumentCount();
 
-  const result = await Test.find(isCondition)
-    .limit(limit)
-    .skip(skip)
-    .populate({ path: 'department' })
-    .populate('specimen')
-    .populate('groupTests')
-    .populate('testTube')
-    .populate('hospitalGroup')
-    .populate('groupTests')
-    .populate('resultFields');
+  //Using flags for sending simplified test data
+  // In this case, we are sending simplified test data when flag.flag is 'o'
+  // Otherwise, we are sending complete test data when flag.flag is 'c'
+  let result = [];
+
+  if (flag?.flag == 'o') {
+    result = await Test.find(isCondition)
+      .limit(limit)
+      .skip(skip)
+      .populate('testTube')
+      .populate({ path: 'department' });
+  } else {
+    result = await Test.find(isCondition)
+      .limit(limit)
+      .skip(skip)
+      .populate({ path: 'department' })
+      .populate('specimen')
+      .populate('groupTests')
+      .populate('testTube')
+      .populate('hospitalGroup')
+      .populate('groupTests')
+      .populate('resultFields');
+  }
 
   return {
     meta: {

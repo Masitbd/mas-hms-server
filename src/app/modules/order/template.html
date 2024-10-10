@@ -98,7 +98,7 @@
 
             size: A5;
             orientation: landscape;
-            margin: 0;
+            margin: 0px 1.5rem;
             padding: 0;    
         }
         .invoice-box table{
@@ -106,9 +106,9 @@
             line-height: normal;
         }
          .logoImage{
-        height: 40px;
-        width: 40px;
-        margin: 0;
+        height: 60px;
+        width: 60px;
+        margin: 0 ;
         padding: 0;
     }
     }
@@ -156,15 +156,17 @@
             <caption>
                {{#if companyInfo}}
 
-                <div style="text-align: center; border-bottom: 2px solid black;">
+                <div style="text-align: center; border-bottom: 2px solid black; display: flex; align-items: center; justify-content: center;">
                    {{#if companyInfo.photoUrl}}
                     <img src="{{companyInfo.photoUrl}}" alt="" class="logoImage">
                     {{/if}}
+                    <div>
                     <h1 style="margin-bottom: 5px;">{{companyInfo.name}}</h1>
                     <p>
                        {{companyInfo.address}} <br>
                        {{companyInfo.phone}}<br>
                     </p>
+                    </div>
 
                     
                 
