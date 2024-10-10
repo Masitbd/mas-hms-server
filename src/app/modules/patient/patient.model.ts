@@ -1,4 +1,5 @@
 import { Schema, Types, model } from 'mongoose';
+import { patientIdGenerator } from '../../../utils/PatientIdGenerator';
 import { IPatient } from './patient.interface';
 
 const PatientSchema = new Schema<IPatient>(
@@ -36,11 +37,8 @@ const PatientSchema = new Schema<IPatient>(
 
 PatientSchema.pre('save', async function (next) {
   const patient: IPatient = this as IPatient;
-  const lastPatient = await Patient.find().sort({ uuid: -1 }).limit(1);
-  const uuid =
-    lastPatient.length > 0 ? Number(lastPatient[0].uuid?.split('-')[2]) : 0;
 
-  const newUUid = 'HMS-' + 'P-' + String(Number(uuid) + 1).padStart(7, '0');
+  const newUUid = await patientIdGenerator().then(id => id);
   patient.uuid = newUUid;
   next();
 });

@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import httpStatus from 'http-status';
 import { Secret } from 'jsonwebtoken';
 import config from '../../config';
+import { ENUM_USER_PEMISSION } from '../../enums/userPermissions';
 import ApiError from '../../errors/ApiError';
 import { jwtHelpers } from '../../helpers/jwtHelpers';
 
@@ -21,7 +22,12 @@ const auth =
       verifiedUser = jwtHelpers.verifyToken(token, config.jwt.secret as Secret);
 
       req.user = verifiedUser; // role  , userid
-
+      if (
+        verifiedUser?.permissions?.includes(ENUM_USER_PEMISSION.SUPER_ADMIN)
+      ) {
+        next();
+        return;
+      }
       if (
         requiredPermissions &&
         !verifiedUser.permissions.some((permission: number) =>

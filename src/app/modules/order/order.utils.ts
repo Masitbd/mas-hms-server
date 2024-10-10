@@ -193,6 +193,7 @@ export const orderAggregationPipeline = (
         patientType: { $first: '$patientType' },
         // tests: { $first: '$tests' },
         createdAt: { $first: '$createdAt' },
+        postedBy: { $first: '$postedBy' },
       },
     },
     {

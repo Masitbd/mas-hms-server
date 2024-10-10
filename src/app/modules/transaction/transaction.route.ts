@@ -7,15 +7,19 @@ import { TransactionValidtion } from './transaction.validation';
 const routes = express.Router();
 routes.post(
   '/',
-  auth(
-    ENUM_USER_PEMISSION.ADMIN,
-    ENUM_USER_PEMISSION.SUPER_ADMIN,
-    ENUM_USER_PEMISSION.USER
-  ),
+  auth(ENUM_USER_PEMISSION.USER),
   validateRequest(TransactionValidtion.transactionValidator),
   TranasctionController.createNewTransaciton
 );
-routes.get('/:id', TranasctionController.getSingleTransaction);
-routes.get('/uuid/:id', TranasctionController.getTransactionByUuid);
+routes.get(
+  '/:id',
+  auth(ENUM_USER_PEMISSION.USER),
+  TranasctionController.getSingleTransaction
+);
+routes.get(
+  '/uuid/:id',
+  auth(ENUM_USER_PEMISSION.USER),
+  TranasctionController.getTransactionByUuid
+);
 
 export const TransactionRoute = { routes };

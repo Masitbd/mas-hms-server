@@ -1,9 +1,15 @@
+import { Types } from 'mongoose';
 import { paginationHelpers } from '../../../helpers/paginationHelper';
 import { testSearchableFields } from './test.constant';
 import { ITest } from './test.interfacs';
 import { Test } from './test.model';
 
 const postTest = async (payload: ITest) => {
+  if (payload?.resultFields?.length) {
+    payload.resultFields = payload.resultFields.map(
+      rf => rf?._id as Types.ObjectId
+    );
+  }
   const lastTest = await Test.find().sort({ testCode: -1 }).limit(1);
 
   const testId = lastTest.length > 0 ? Number(lastTest[0].testCode) : 0;
@@ -17,7 +23,11 @@ const postTest = async (payload: ITest) => {
 };
 
 const patchTest = async (id: string, payload: Partial<ITest>) => {
-  console.log(payload);
+  if (payload?.resultFields?.length) {
+    payload.resultFields = payload.resultFields.map(
+      rf => rf?._id as Types.ObjectId
+    );
+  }
   const result = await Test.findOneAndUpdate({ _id: id }, payload);
   return result;
 };
@@ -28,12 +38,15 @@ const deleteTest = async (id: string) => {
 };
 
 const fetchSingleTest = async (id: string) => {
-  console.log(id, 'id');
-  const result = await Test.findOne({ _id: id });
+  const result = await Test.findOne({ _id: id }).populate('resultFields');
   return result;
 };
 
-const fetchAllTest = async (filterOption: any, options: any) => {
+const fetchAllTest = async (
+  filterOption: any,
+  options: any,
+  flag: { flag: string }
+) => {
   const { searchTerm, ...filterOptions } = filterOption;
   const andConditions = [];
   if (searchTerm) {
@@ -62,15 +75,29 @@ const fetchAllTest = async (filterOption: any, options: any) => {
   const isCondition = andConditions.length > 0 ? { $and: andConditions } : {};
   const total = await Test.estimatedDocumentCount();
 
-  const result = await Test.find(isCondition)
-    .limit(limit)
-    .skip(skip)
-    .populate({ path: 'department' })
-    .populate('specimen')
-    .populate('groupTests')
-    .populate('testTube')
-    .populate('hospitalGroup')
-    .populate('groupTests');
+  //Using flags for sending simplified test data
+  // In this case, we are sending simplified test data when flag.flag is 'o'
+  // Otherwise, we are sending complete test data when flag.flag is 'c'
+  let result = [];
+
+  if (flag?.flag == 'o') {
+    result = await Test.find(isCondition)
+      .limit(limit)
+      .skip(skip)
+      .populate('testTube')
+      .populate({ path: 'department' });
+  } else {
+    result = await Test.find(isCondition)
+      .limit(limit)
+      .skip(skip)
+      .populate({ path: 'department' })
+      .populate('specimen')
+      .populate('groupTests')
+      .populate('testTube')
+      .populate('hospitalGroup')
+      .populate('groupTests')
+      .populate('resultFields');
+  }
 
   return {
     meta: {

@@ -15,6 +15,7 @@ const create = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getSingle = catchAsync(async (req: Request, res: Response) => {
+
   const id = req.params.id;
   const result = await MiscellaneousService.getSingle(id);
   sendResponse(res, {
@@ -59,6 +60,19 @@ const update = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+//  get margin data
+
+const getMarginData = catchAsync(async (req: Request, res: Response) => {
+  console.log('hit api');
+  const result = await MiscellaneousService.getMarginDataFromDB();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Single Miscellaneous fetched was  Group Successfully',
+    data: result,
+  });
+});
+
 const remove = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id;
   const result = await MiscellaneousService.remove(id);
@@ -76,4 +90,5 @@ export const MiscellaneousController = {
   getAll,
   update,
   remove,
+  getMarginData,
 };

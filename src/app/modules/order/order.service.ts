@@ -10,10 +10,13 @@ import { ENUM_TEST_STATUS } from '../../../enums/testStatusEnum';
 import ApiError from '../../../errors/ApiError';
 import { paginationHelpers } from '../../../helpers/paginationHelper';
 import { IPaginationOptions } from '../../../interfaces/pagination';
+import { orderIdGenerator } from '../../../utils/OrderIdGenerator';
 import { PDFGeneratorV2 } from '../../../utils/PdfGenerator.v2';
 import { Account } from '../account/account.model';
+import { CompanyInfo } from '../componayInfo/companyInfo.model';
 import { IDepartment } from '../departments/departments.interfaces';
 import { Doctor } from '../doctor/doctor.model';
+import { Miscellaneous } from '../miscellaneous/miscellaneous.model';
 import { Refund } from '../refund/refund.model';
 import { ReportGroup } from '../reportGroup/reportGroup.model';
 import { ITest } from '../test/test.interfacs';
@@ -35,12 +38,10 @@ import {
 } from './order.utils';
 
 const postOrder = async (params: IOrder) => {
-  const order: IOrder = params;
-  const lastOrder = await Order.find().sort({ oid: -1 }).limit(1);
-  const oid =
-    lastOrder.length > 0 ? Number(lastOrder[0].oid?.split('-')[1]) : 0;
+  const newOid = await orderIdGenerator().then(id => id);
 
-  const newOid = 'HMS-' + String(Number(oid) + 1).padStart(7, '0');
+  const order: IOrder = params;
+
   order.oid = newOid;
 
   // evaluating total price
@@ -215,6 +216,7 @@ const fetchAll = async ({
       }
     });
   }
+
   const isCondition = condition.length > 0 ? { $and: condition } : {};
 
   const result = await Order.aggregate(
@@ -492,10 +494,18 @@ const fetchIvoice = async (params: string) => {
   });
   const barcodeUrl = barcodeDoc.toDataURL('image/png');
 
+  // for margin or company Info
+  const companyInfo = await CompanyInfo.findOne({ default: true });
+  const defaultMargin = await Miscellaneous.findOne({ title: 'margin' });
+  let marginValue = [0, 0, 0, 0];
+  if (marginValue) {
+    const md = defaultMargin?.value?.split(',').map(m => Number(m));
+    marginValue = md as number[];
+  }
+
   const dataBinding = await {
     items: items,
     isFree: order[0].discountedBy == 'free',
-
     isWatermark: order[0].dueAmount > 0,
     oid: params,
     name: order[0].patient.name,
@@ -540,6 +550,20 @@ const fetchIvoice = async (params: string) => {
     refundApplied,
     vat: order[0].vat,
     vatAmount: Math.ceil(vatAmount),
+    companyInfo: {
+      name: companyInfo?.name,
+      address: companyInfo?.address,
+      photoUrl: companyInfo?.photoUrl,
+      phone: companyInfo?.phone,
+    },
+    marginValue: companyInfo
+      ? { top: 0, right: 0, left: 0, bottom: 0 }
+      : {
+          top: marginValue[1] ?? 0,
+          right: marginValue[2] ?? 0,
+          left: marginValue[0] ?? 0,
+          bottom: marginValue[3] ?? 0,
+        },
   };
 
   const templateHtml = fs.readFileSync(
@@ -607,6 +631,20 @@ const fetchSingle = async (params: string) => {
         preserveNullAndEmptyArrays: true,
       },
     },
+    {
+      $lookup: {
+        from: 'doctors',
+        localField: 'consultant',
+        foreignField: '_id',
+        as: 'consultant',
+      },
+    },
+    {
+      $unwind: {
+        path: '$consultant',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
     { $unwind: '$tests' },
     {
       $lookup: {
@@ -622,7 +660,22 @@ const fetchSingle = async (params: string) => {
         preserveNullAndEmptyArrays: true,
       },
     },
-
+    {
+      $lookup: {
+        from: 'specimens',
+        localField: 'testData.specimen',
+        foreignField: '_id',
+        as: 'testData.specimen',
+      },
+    },
+    {
+      $lookup: {
+        from: 'reporttypes',
+        localField: 'testData.resultFields',
+        foreignField: '_id',
+        as: 'testData.resultFields',
+      },
+    },
     {
       $group: {
         _id: '$_id',
@@ -1380,6 +1433,34 @@ const getDueBillsDetailFromDB = async (query: Record<string, any>) => {
   return result;
 };
 
+const fetchOrderPostedBy = async () => {
+  return await Order.aggregate([
+    {
+      $match: {
+        postedBy: { $ne: null },
+      },
+    },
+    {
+      $project: {
+        postedBy: 1,
+      },
+    },
+    {
+      $lookup: {
+        from: 'profiles',
+        localField: 'postedBy',
+        foreignField: 'uuid',
+        as: 'postedBy',
+      },
+    },
+    {
+      $unwind: '$postedBy',
+    },
+    {
+      $group: { _id: '$postedBy.uuid', name: { $first: '$postedBy.name' } },
+    },
+  ]);
+};
 export const OrderService = {
   postOrder,
   fetchAll,
@@ -1390,4 +1471,5 @@ export const OrderService = {
   singleOrderstatusChanger,
   getIncomeStatementFromDB,
   getDueBillsDetailFromDB,
+  fetchOrderPostedBy,
 };

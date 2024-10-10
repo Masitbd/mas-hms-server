@@ -138,7 +138,9 @@ const getAllDoctor = async (
 };
 
 const getSingleDoctor = async (id: string): Promise<IDoctor | null> => {
-  console.log(id, 'singleD');
+  if (id == undefined || id == null) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid id');
+  }
   const result = await Doctor.findOne({ _id: id }).populate('account_id');
   if (!result) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Doctor not found');

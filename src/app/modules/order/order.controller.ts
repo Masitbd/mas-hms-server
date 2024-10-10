@@ -149,6 +149,16 @@ const getDueDetails = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getOrderPostedBy = catchAsync(async (req: Request, res: Response) => {
+  const result = await OrderService.fetchOrderPostedBy();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Order Posted By featched successfully',
+    data: result,
+  });
+});
+
 export const OrderController = {
   createNewOrder,
   getAllOrder,
@@ -159,4 +169,5 @@ export const OrderController = {
   statusChanger,
   getIncomeStatement,
   getDueDetails,
+  getOrderPostedBy,
 };

@@ -6,6 +6,7 @@ const post = async (params: IMiscellaneous) => {
 };
 
 const patch = async (data: IMiscellaneous, id: string) => {
+ 
   return await Miscellaneous.findOneAndUpdate({ _id: id }, data);
 };
 
@@ -28,10 +29,21 @@ const getALl = async (filterOption: string) => {
   return await Miscellaneous.find(condition);
 };
 
+//  get onley margin data
+
+const getMarginDataFromDB = async () => {
+  const result = await Miscellaneous.findOne({
+    title: 'margin',
+  });
+
+  return result;
+};
+
 export const MiscellaneousService = {
   post,
   patch,
   remove,
   getSingle,
   getALl,
+  getMarginDataFromDB,
 };

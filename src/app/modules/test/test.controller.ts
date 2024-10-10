@@ -59,7 +59,13 @@ const getSingleTest = catchAsync(async (req: Request, res: Response) => {
 const getAllTest = catchAsync(async (req: Request, res: Response) => {
   const filters = pick(req.query, testFiltarableFields);
   const options = pick(req.query, ['limit', 'page', 'sortBy', 'sortOrder']);
-  const result = await TestServices.fetchAllTest(filters, options);
+  const flag = pick(req.query, ['flag']);
+
+  const result = await TestServices.fetchAllTest(
+    filters,
+    options,
+    flag as { flag: string }
+  );
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Test successfully Featched',
