@@ -37,6 +37,11 @@ const PatientValidator = z.object({
         required_error: 'Name is required',
       })
       .optional(),
+    publicId: z
+      .string({
+        required_error: 'Name is required',
+      })
+      .optional(),
   }),
 });
 
@@ -83,6 +88,11 @@ const PatientValidatorForPatch = z.object({
       })
       .optional(),
     image: z
+      .string({
+        required_error: 'Name is required',
+      })
+      .optional(),
+    publicId: z
       .string({
         required_error: 'Name is required',
       })
