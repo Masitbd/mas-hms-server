@@ -1,10 +1,12 @@
-version: '3'
+version: "3"
 
 services:
   app:
-    build: .
+  
+    build:
+      context: .
     ports:
-      - 4002:${PORT}
+      - 4002
     depends_on:
       - mongo
     environment:
@@ -14,7 +16,10 @@ services:
       - .:/app
       - /app/node_modules  
     networks:
-      - mas-hms-network  
+      - mas-hms-network 
+    env_file: 
+      - .env 
+     
   mongo:
     restart: always
     image: mongo:latest    
@@ -24,7 +29,9 @@ services:
     volumes:
       - mongo-data:/data/db  
 volumes:
-  mongo-data:  
+  mongo-data: 
+
+
 
 networks:
   mas-hms-network:

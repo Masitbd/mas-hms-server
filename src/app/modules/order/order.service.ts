@@ -71,7 +71,6 @@ const postOrder = async (params: IOrder) => {
   } else {
     result = await OrderForUnregistered.create(order);
   }
-
   const doesAccountExists = await Account.find({ title: 'Order' });
 
   const lastAccount = await Account.find().sort({ uuid: -1 }).limit(1);
@@ -109,31 +108,6 @@ const postOrder = async (params: IOrder) => {
       postedBy: params.postedBy,
     });
   }
-
-  // if (order.dueAmount == 0) {
-  //   const testIds = order.tests;
-
-  //   const result = await Test.aggregate(
-  //     grossCommissionAmountPipeline(testIds as unknown as ITestsFromOrder[])
-  //   );
-  //   const referedDoctor: IDoctor | null = await Doctor.findOne({
-  //     _id: order.refBy,
-  //   });
-
-  //   if (
-  //     referedDoctor?.account_id &&
-  //     order.dueAmount === 0 &&
-  //     result[0].totalCommission > 0
-  //   ) {
-  //     TransactionService.postTransaction({
-  //       uuid: referedDoctor.account_number,
-  //       amount: Math.ceil(result[0].totalCommission),
-  //       description: 'Account credited for patient commission',
-  //       transactionType: 'credit',
-  //       ref: order._id,
-  //     });
-  //   }
-  // }
 
   return result;
 };
@@ -232,8 +206,70 @@ const fetchAll = async ({
     totalData: totalDoc,
   };
 };
-const orderPatch = async (param: { id: string; data: Partial<IOrder> }) => {
-  const result = await Order.findOneAndUpdate({ _id: param.id }, param.data, {
+const orderPatch = async (param: {
+  id: string;
+  data: Partial<IOrder>;
+  user: string;
+}) => {
+  const { data, id, user } = param;
+  const doesExists = await Order.findOne({ _id: param.id });
+  if (!doesExists) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Order not found');
+  }
+  const {
+    cashDiscount,
+    discountBasedOnParcent,
+    discountGivenByDoctor,
+    totalTestPrice,
+    tubePrice,
+    vat,
+  } = await totalPriceCalculator(data as IOrder);
+
+  // CHecking for paid amount
+  if (data.paid) {
+    // IF paid amount is greater the amount will be marked as collection fon order
+    if (data.paid > doesExists.paid) {
+      const account = await Account.find({ title: 'Order' });
+      await TransactionService.postTransaction({
+        amount: data.paid - doesExists.paid,
+        description: 'Payment for order',
+        transactionType: 'debit',
+        ref: id as unknown as Types.ObjectId,
+        uuid: account[0].uuid,
+        postedBy: user,
+      });
+    }
+
+    // If paid amount is less than the amount will be marked as refund for order
+    // if (data.paid < doesExists.paid) {
+    //   await Refund.create({
+    //     oid: data?.oid,
+    //     discount: 0,
+    //     grossAmount: doesExists.paid - data.paid,
+    //     netAmount: doesExists.paid - data.paid,
+    //     refundApplied: 0,
+    //     refundedBy: user,
+    //     remainingRefund: doesExists.paid - data.paid,
+    //     id: 0,
+    //     vat: data?.vat,
+    //   });
+    // }
+  }
+
+  data.tubePrice = tubePrice;
+  data.totalPrice = totalTestPrice + tubePrice;
+  data.dueAmount =
+    data.discountedBy == 'free'
+      ? 0
+      : totalTestPrice +
+        tubePrice -
+        discountBasedOnParcent -
+        discountGivenByDoctor -
+        (data?.cashDiscount ?? 0) -
+        (data?.paid ?? 0) +
+        vat;
+
+  const result = await Order.findOneAndUpdate({ _id: param.id }, data, {
     new: true,
   });
   return result;
@@ -267,6 +303,20 @@ const fetchIvoice = async (params: string) => {
     },
     {
       $unset: ['patientDataFromUUID', 'patient'],
+    },
+    {
+      $lookup: {
+        from: 'profiles',
+        localField: 'postedBy',
+        foreignField: 'uuid',
+        as: 'postedBy',
+      },
+    },
+    {
+      $unwind: {
+        path: '$postedBy',
+        preserveNullAndEmptyArrays: true,
+      },
     },
     {
       $lookup: {
@@ -311,6 +361,7 @@ const fetchIvoice = async (params: string) => {
       $group: {
         _id: '$_id',
         uuid: { $first: '$uuid' },
+        postedBy: { $first: '$postedBy' },
         patient: { $first: '$patientData' },
         totalPrice: { $first: '$totalPrice' },
         cashDiscount: { $first: '$cashDiscount' },
@@ -564,6 +615,9 @@ const fetchIvoice = async (params: string) => {
           left: marginValue[0] ?? 0,
           bottom: marginValue[3] ?? 0,
         },
+
+    postedBy: order[0]?.postedBy,
+    refBy: order[0]?.refBy,
   };
 
   const templateHtml = fs.readFileSync(

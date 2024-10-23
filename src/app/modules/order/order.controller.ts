@@ -56,6 +56,7 @@ const updateOrder = catchAsync(
     const result = await OrderService.orderPatch({
       id: req.params.id,
       data: req.body,
+      user: req?.user?.uuid,
     });
 
     sendResponse<IOrder>(res, {

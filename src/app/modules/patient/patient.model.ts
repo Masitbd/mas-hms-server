@@ -13,7 +13,7 @@ const PatientSchema = new Schema<IPatient>(
     dateOfBirth: { type: String },
     maritalStatus: { type: String },
 
-    nationality: { type: String },
+    nationalID: { type: String },
     religion: { type: String },
 
     age: { type: String, required: true },
