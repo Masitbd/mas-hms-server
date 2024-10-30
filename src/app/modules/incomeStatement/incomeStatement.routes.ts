@@ -10,5 +10,9 @@ router.get(
   '/summery',
   incomeStatementControllers.getEmployeeIncomeStatementSummery
 );
+router.get(
+  '/last-paid',
+  incomeStatementControllers.getLastTwentyEightDaysPaidAmount
+);
 
 export const incomeStatementRoutes = { router };

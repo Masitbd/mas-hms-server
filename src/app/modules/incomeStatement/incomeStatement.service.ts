@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PipelineStage } from 'mongoose';
+import { Doctor } from '../doctor/doctor.model';
 import { Order } from '../order/order.model';
+import { Test } from '../test/test.model';
 
 const getEmployeeIncomeStatementFromDB = async (
   payload: Record<string, any>
@@ -104,8 +106,6 @@ const getEmployeeIncomeStatementSummeryFromDB = async (
 
   endDate.setUTCHours(23, 59, 59, 999);
 
-  
-
   const query: PipelineStage[] = [
     {
       $match: {
@@ -173,7 +173,86 @@ const getEmployeeIncomeStatementSummeryFromDB = async (
   return result;
 };
 
+// ? total income last 28 day
+
+const getLastTwentyEightDaysPaidAmountFromDB = async () => {
+  try {
+    const startDate = new Date();
+    startDate.setUTCDate(startDate.getUTCDate() - 77);
+    startDate.setUTCHours(0, 0, 0, 0); // Set to midnight UTC
+
+    const totalIncomeResult = await Order.aggregate([
+      { $group: { _id: null, totalIncome: { $sum: '$paid' } } },
+    ]);
+    const totalIncome = totalIncomeResult[0]?.totalIncome || 0;
+
+    //  calculate total doctor
+    const totalDoctors = await Doctor.countDocuments();
+    const totalTests = await Test.countDocuments();
+
+    const result = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate },
+        },
+      },
+
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: '%d-%m-%Y',
+              date: '$createdAt',
+              timezone: 'UTC',
+            },
+          },
+          dailyIncome: { $sum: '$paid' },
+        },
+      },
+      // Step 3: Sort by day to have a chronological list
+      { $sort: { _id: 1 } },
+    ]);
+
+    const firstPeriodIncome = result
+      .slice(0, 14)
+      .reduce((acc, day) => acc + day.dailyIncome, 0);
+    const secondPeriodIncome = result
+      .slice(14)
+      .reduce((acc, day) => acc + day.dailyIncome, 0);
+
+    // Calculate the percentage change
+    const percentageChange =
+      firstPeriodIncome > 0
+        ? ((secondPeriodIncome - firstPeriodIncome) / totalIncome) * 100
+        : null;
+    const trendType =
+      typeof percentageChange === 'number' && percentageChange > 0
+        ? 'increase'
+        : 'decrease';
+
+    return {
+      totalIncome,
+      totalDoctors,
+      totalTests,
+      dailyBreakdown: result.map(day => ({
+        date: day._id,
+        income: day.dailyIncome,
+      })),
+      trend: {
+        type: trendType,
+        percentageChange:
+          percentageChange !== null ? percentageChange.toFixed(2) : 'N/A',
+        firstPeriodIncome,
+        secondPeriodIncome,
+      },
+    };
+  } catch (error) {
+    throw new Error('Something went wrong');
+  }
+};
+
 export const incomeStatementServices = {
   getEmployeeIncomeStatementFromDB,
   getEmployeeIncomeStatementSummeryFromDB,
+  getLastTwentyEightDaysPaidAmountFromDB,
 };

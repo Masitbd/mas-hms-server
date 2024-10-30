@@ -12,4 +12,10 @@ class ApiError extends Error {
   }
 }
 
+
+// query in bkash
+
+
+
+
 export default ApiError;
