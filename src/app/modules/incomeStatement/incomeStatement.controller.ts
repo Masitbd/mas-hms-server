@@ -31,9 +31,23 @@ const getEmployeeIncomeStatementSummery = catchAsync(
   }
 );
 
+// ? get last thenty eighty days income
+
+const getLastTwentyEightDaysPaidAmount = catchAsync(async (req, res) => {
+  const result =
+    await incomeStatementServices.getLastTwentyEightDaysPaidAmountFromDB();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Retrived Successfully',
+    success: true,
+    data: result,
+  });
+});
+
 // export
 
 export const incomeStatementControllers = {
   getEmployeeIncomeStatementSummery,
   getEmployeeIncomeStatement,
+  getLastTwentyEightDaysPaidAmount
 };

@@ -17,5 +17,9 @@ router.get(
   auth(ENUM_USER_PEMISSION.GET_FINANCIAL_REPORT),
   incomeStatementControllers.getEmployeeIncomeStatementSummery
 );
+router.get(
+  '/last-paid',
+  incomeStatementControllers.getLastTwentyEightDaysPaidAmount
+);
 
 export const incomeStatementRoutes = { router };
