@@ -35,7 +35,7 @@ const post = async (params: IReportForParameter) => {
         });
         order.tests = tests as any;
 
-        order.save();
+        await order.save();
       }
     };
 

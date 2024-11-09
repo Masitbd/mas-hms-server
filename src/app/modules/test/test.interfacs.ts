@@ -1,6 +1,7 @@
 import { Model, Types } from 'mongoose';
 
 type IResultFields = {
+  _id?: string;
   title: string;
   test: string;
   unit: string;
@@ -34,7 +35,7 @@ export type ITest = {
   groupTests: Types.ObjectId[];
   vatRate: number;
   processTime: number;
-  resultFields: IResultFields[];
+  resultFields: IResultFields[] | Types.ObjectId[];
 };
 
 export type ItestFiltarableFields =

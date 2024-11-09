@@ -194,7 +194,11 @@ const getAllTests = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllDoctors = catchAsync(async (req: Request, res: Response) => {
-  const result = await FinancialReportService.feacthALlDoctor();
+  const employeeId = pick(req.query, ['id']);
+
+  const result = await FinancialReportService.feacthALlDoctor(
+    employeeId as { id: string }
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

@@ -26,4 +26,5 @@ export type IPatient = {
   phone: string;
   email?: string;
   image?: string;
+  publicId: string;
 };

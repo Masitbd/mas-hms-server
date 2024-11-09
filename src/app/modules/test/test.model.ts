@@ -84,56 +84,8 @@ const testSchema = new Schema<ITest, TestModel>(
     },
     resultFields: [
       {
-        investigation: {
-          type: String,
-        },
-        label: {
-          type: String,
-        },
-        description: {
-          type: String,
-        },
-        title: {
-          type: String,
-        },
-        test: {
-          type: String,
-        },
-        unit: {
-          type: String,
-        },
-        normalValue: {
-          type: String,
-        },
-        hasPdrv: {
-          type: Boolean,
-        },
-        defaultValue: [
-          {
-            type: String,
-          },
-        ],
-        resultDescripton: {
-          type: String,
-        },
-        sensitivityOptions: [
-          {
-            type: Schema.Types.ObjectId,
-            ref: 'sensitivities',
-          },
-        ],
-        conditions: [
-          {
-            type: Schema.Types.ObjectId,
-            ref: 'conditions',
-          },
-        ],
-        bacterias: [
-          {
-            type: Schema.Types.ObjectId,
-            ref: 'bacterias',
-          },
-        ],
+        type: Schema.Types.ObjectId,
+        ref: 'ReportType',
       },
     ],
   },

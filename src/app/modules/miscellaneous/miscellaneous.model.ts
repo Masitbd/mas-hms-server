@@ -12,6 +12,7 @@ const MiscellaneousSchema = new Schema<IMiscellaneous>(
       type: String,
       required: true,
     },
+   
   },
   { timestamps: true }
 );
