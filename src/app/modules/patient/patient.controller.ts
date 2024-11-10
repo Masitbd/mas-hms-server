@@ -32,12 +32,13 @@ const updatePatient = catchAsync(
 );
 const getSingle = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
+    console.log(req.params.id);
     const result = await PatientService.fetchSingel(req.params.id);
 
     sendResponse<IPatient>(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Order created successfully',
+      message: 'Patient fetched successfully',
       data: result,
     });
   }
