@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PipelineStage } from 'mongoose';
-import { Doctor } from '../doctor/doctor.model';
 import { Order } from '../order/order.model';
-import { Test } from '../test/test.model';
+import { Transation } from '../transaction/transaction.model';
 
 const getEmployeeIncomeStatementFromDB = async (
   payload: Record<string, any>
@@ -178,17 +177,62 @@ const getEmployeeIncomeStatementSummeryFromDB = async (
 const getLastTwentyEightDaysPaidAmountFromDB = async () => {
   try {
     const startDate = new Date();
-    startDate.setUTCDate(startDate.getUTCDate() - 77);
+    startDate.setUTCDate(startDate.getUTCDate() - 30);
     startDate.setUTCHours(0, 0, 0, 0); // Set to midnight UTC
+    // ? total income of paid amount
 
     const totalIncomeResult = await Order.aggregate([
       { $group: { _id: null, totalIncome: { $sum: '$paid' } } },
     ]);
     const totalIncome = totalIncomeResult[0]?.totalIncome || 0;
 
-    //  calculate total doctor
-    const totalDoctors = await Doctor.countDocuments();
-    const totalTests = await Test.countDocuments();
+    // ! total due
+
+    const totalDueResult = await Order.aggregate([
+      { $group: { _id: null, totalDue: { $sum: '$dueAmount' } } },
+    ]);
+    const totalDue = totalDueResult[0]?.totalDue || 0;
+
+    //? today total paid
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0); // Start of today
+    const todayEnd = new Date();
+    todayEnd.setUTCHours(23, 59, 59, 999);
+
+    const todayTotalPaidResult = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: todayStart, $lte: todayEnd },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          todayTotalPaid: { $sum: '$paid' },
+        },
+      },
+    ]);
+    const todayTotalPaid = todayTotalPaidResult[0]?.todayTotalPaid || 0;
+
+    //? today total due collection
+
+    const todayTotalDuePaidResult = await Transation.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: todayStart, $lte: todayEnd },
+          description: 'Collected due amount',
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          todayTotalDuePaid: { $sum: '$amount' },
+        },
+      },
+    ]);
+
+    const todayTotalDuePaid =
+      todayTotalDuePaidResult[0]?.todayTotalDuePaid || 0;
 
     const result = await Order.aggregate([
       {
@@ -232,8 +276,9 @@ const getLastTwentyEightDaysPaidAmountFromDB = async () => {
 
     return {
       totalIncome,
-      totalDoctors,
-      totalTests,
+      todayTotalPaid,
+      todayTotalDuePaid,
+      totalDue,
       dailyBreakdown: result.map(day => ({
         date: day._id,
         income: day.dailyIncome,
