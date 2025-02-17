@@ -12,6 +12,7 @@
     "prettier:fix": "prettier --write .",
     "lint-prettier": "yarn lint:check && yarn prettier:check",
     "test": "echo \"Error: no test specified\" && exit 1"
+    ,"build": "npx tsc"
   },
   "author": "MAS IT",
   "license": "ISC",

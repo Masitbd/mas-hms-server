@@ -47,29 +47,27 @@ const updateDoctorSeal = async (
     session.startTransaction();
 
     if (payload.default == true) {
-      const doesDefaultExists = await DoctorSeal.findOne({
-        default: true,
-      }).session(session);
-      if (doesDefaultExists) {
-        doesDefaultExists.default = false;
-        await doesDefaultExists.save({ session });
-      }
+      await DoctorSeal.findOneAndUpdate(
+        { default: true },
+        { default: false }
+      ).session(session);
     }
 
-    const result = await DoctorSeal.findOneAndUpdate({ _id: id }, payload, {
-      new: true,
-    });
-    await session.commitTransaction();
+    const result = await DoctorSeal.findOneAndUpdate(
+      { _id: id },
+      payload,
+      { new: true, session } // Include session here
+    );
 
+    await session.commitTransaction(); // Ensure transaction is committed
     return result as unknown as IDoctorSeal;
   } catch (error) {
-    await session.abortTransaction();
+    await session.abortTransaction(); // Ensure transaction is aborted on error
     throw error;
   } finally {
-    await session.endSession();
+    session.endSession(); // Close session properly
   }
 };
-
 // This function works for finding all the DoctorSeal
 const getAllDoctorSeal = async (
   payload: Record<ISealFilterableFields, string>
