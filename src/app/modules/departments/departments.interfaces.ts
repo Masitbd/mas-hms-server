@@ -7,6 +7,9 @@ export type IDepartment = {
   fixedCommission: number;
   isCommissionFiexed: boolean;
   description?: string;
+  isRoomInfo: boolean;
+  roomName?: string;
+  roomNo?: string;
 };
 
 export type DepartmentModel = Model<IDepartment, Record<string, unknown>>;

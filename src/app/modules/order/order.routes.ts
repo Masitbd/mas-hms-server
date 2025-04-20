@@ -50,4 +50,5 @@ routes.post(
   OrderController.statusChanger
 );
 
+routes.get('/payment-info/:uuid', OrderController.getOrderAndPaymentInfoByUUID);
 export const OrderRoutes = { routes };

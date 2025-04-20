@@ -31,6 +31,7 @@ export type IOrder = {
   postedBy: string;
   refundData?: Partial<IRefund>;
   tubePrice: number;
+  netPayable: number;
 };
 
 export type IorderFilterableFields =

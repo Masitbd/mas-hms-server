@@ -1,13 +1,8 @@
 FROM node:20-alpine
 WORKDIR /app
-COPY package.json tsconfig.json ./
-RUN npm install && \
-    npm install cookie-parser && \
-    npm run build && \
-    npm cache clean --force && \
-    rm -rf /root/.npm && \
-    rm -rf node_modules
-
+#ENV PORT=4002
+# RUN apk add --no-cache python3 make g++ cairo-dev pango-dev giflib-dev
+COPY package.json yarn.lock ./
+RUN yarn install
 COPY . .
-EXPOSE 3001
-CMD ["npm","start"]
+CMD ["yarn","dev"]
