@@ -40,6 +40,7 @@ const orderSchema = new Schema<IOrder>(
       required: true,
     },
     tubePrice: { type: Number, required: true },
+    netPayable: { type: Number },
   },
   {
     timestamps: true,

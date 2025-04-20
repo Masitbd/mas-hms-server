@@ -29,7 +29,18 @@ const DepartmentSchema = new Schema<IDepartment>(
     description: {
       type: String,
     },
+    isRoomInfo: {
+      type: Boolean,
+      default: false,
+    },
+    roomName: {
+      type: String,
+    },
+    roomNo: {
+      type: String,
+    },
   },
+
   {
     timestamps: true,
     toJSON: {
