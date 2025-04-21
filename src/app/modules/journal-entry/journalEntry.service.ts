@@ -28,7 +28,7 @@ export const postOrderJournalEntry = async ({
   console.log(orderAmount, paid, due);
   const journalEntry: IJournalEntry[] = [
     {
-      account: LedgerEnum.ServiceIncome,
+      account: LedgerEnum.Service_Income_Diagonestic,
       credit: orderAmount,
       debit: 0,
       journalType: ENUMJournalType.GENERAL,
