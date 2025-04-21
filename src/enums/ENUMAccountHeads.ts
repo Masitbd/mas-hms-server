@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // LedgerEnum.ts
 export enum LedgerEnum {
   // Fixed Assets
@@ -47,6 +48,8 @@ export enum LedgerEnum {
   DividendIncome = '67d27447b69308135eabe005',
   CommissionIncome = '67d274568266df318ddb8eaf',
   OtherOperatingIncome = '67d27467b69308135eabe00b',
+  Service_Income_Indoor = '680549da2e479947918674a2',
+  Service_Income_Diagonestic = '68054a0e2e479947918674aa',
 
   // Operating Expenses
   SalariesAndWages = '67d274828266df318ddb8eb7',

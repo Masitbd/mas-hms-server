@@ -28,3 +28,5 @@ export type IPatient = {
   image?: string;
   publicId: string;
 };
+
+export const patientSearchablePath = ['name', 'uuid', 'email', 'phone'];
