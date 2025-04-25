@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+import mongoose from 'mongoose';
 import { ENUM_TEST_STATUS } from '../../../enums/testStatusEnum';
 import ApiError from '../../../errors/ApiError';
 import { Order } from '../order/order.model';
@@ -13,6 +14,8 @@ import {
 } from './report.model';
 
 const post = async (params: IReportForParameter) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
     const orderStatusChanger = async () => {
       const order = await Order.findOne({ oid: params.oid }).populate(
@@ -35,30 +38,40 @@ const post = async (params: IReportForParameter) => {
         });
         order.tests = tests as any;
 
-        await order.save();
+        await order.save({ session });
       }
     };
 
+    let result;
     switch (params.reportGroup.testResultType) {
       case 'parameter':
-        orderStatusChanger();
-        return await ParameterBasedReport.create(params);
+        await orderStatusChanger();
+        result = await ParameterBasedReport.create([params], { session });
+        break;
 
       case 'descriptive':
-        orderStatusChanger();
-        return await DescriptionBasedReport.create(params);
+        await orderStatusChanger();
+        result = await DescriptionBasedReport.create([params], { session });
+        break;
 
       case 'bacterial':
-        orderStatusChanger();
-        return await MicrobiologyReport.create(params);
+        await orderStatusChanger();
+        result = await MicrobiologyReport.create([params], { session });
+        break;
       default:
         throw new Error('Invalid report group');
     }
+
+    await session.commitTransaction();
+    return result;
   } catch (error) {
+    await session.abortTransaction();
     throw new ApiError(
       httpStatus.INTERNAL_SERVER_ERROR,
       'InterNal server error'
     );
+  } finally {
+    await session.endSession();
   }
 };
 

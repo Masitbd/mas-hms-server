@@ -865,6 +865,7 @@ const fetchSingle = async (params: string) => {
   // const orderForCalculation = await Order.findOne({ oid: params });
   // const result = await totalPriceCalculator(orderForCalculation as IOrder);
 
+  // console.log(new Date().toTimeString(), JSON.parse(JSON.stringify(order[0])));
   return order;
 };
 
