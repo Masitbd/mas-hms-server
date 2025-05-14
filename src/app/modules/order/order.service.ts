@@ -4,6 +4,7 @@ import { createCanvas } from 'canvas';
 import httpStatus from 'http-status';
 import JsBarcode from 'jsbarcode';
 import mongoose, { PipelineStage, Types } from 'mongoose';
+import { ENUM_RESULT_TYPE } from '../../../enums/resultTypeEnum';
 import { ENUM_TEST_STATUS } from '../../../enums/testStatusEnum';
 import ApiError from '../../../errors/ApiError';
 import { paginationHelpers } from '../../../helpers/paginationHelper';
@@ -942,6 +943,7 @@ const singleOrderstatusChanger = async (params: {
   oid: string;
   status: string;
   user: string;
+  test: string;
 }) => {
   const order = await Order.findOne({ oid: params.oid })
     .populate('tests.test')
@@ -970,7 +972,44 @@ const singleOrderstatusChanger = async (params: {
     if (
       'reportGroup' in test.test &&
       reportGroup._id.equals(test.test.reportGroup) &&
-      test.status !== 'refunded'
+      test.status !== 'refunded' &&
+      reportGroup?.testResultType == ENUM_RESULT_TYPE.PARAMETER_BASED
+    ) {
+      if (test.status == 'delivered') {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          'Test report had already delivered. Now status cannot be changed'
+        );
+      }
+      test.status = params.status;
+      if (
+        'isCommissionFiexed' in reportGroup.department &&
+        !reportGroup.department.isCommissionFiexed
+      ) {
+        commission += Math.ceil(
+          (test.test.price * Number(department.commissionParcentage)) / 100
+        );
+      }
+      if (department.isCommissionFiexed) {
+        commission += commission + Number(department.fixedCommission);
+      }
+      if (test.discount) {
+        discount += Math.ceil((test.test.price * Number(test.discount)) / 100);
+        return;
+      }
+      if (order.parcentDiscount) {
+        discount += Math.ceil(
+          (test.test.price * Number(order.parcentDiscount)) / 100
+        );
+        return;
+      } else return;
+    } else if (
+      'reportGroup' in test.test &&
+      reportGroup._id.equals(test.test.reportGroup) &&
+      test.status !== 'refunded' &&
+      reportGroup?.testResultType !== ENUM_RESULT_TYPE.PARAMETER_BASED &&
+      params?.test &&
+      test?.test?._id?.equals(params.test)
     ) {
       if (test.status == 'delivered') {
         throw new ApiError(
@@ -1021,6 +1060,7 @@ const singleOrderstatusChanger = async (params: {
       break;
   }
 
+  console.log(params);
   if (commission && order.refBy) {
     const doctor = await Doctor.findOne({ _id: order.refBy });
     if (doctor) {
