@@ -120,6 +120,7 @@ const statusChanger = catchAsync(
       reportGroup: req.body.reportGroup,
       status: req.body.status,
       user: user,
+      test: req?.body?.test ?? undefined,
     });
     // res.send(result);
     sendResponse(res, {
