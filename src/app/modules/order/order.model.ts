@@ -53,7 +53,7 @@ const orderSchemaForUnregistered = new Schema({
     age: { type: String, required: true },
     gender: { type: String, required: true },
     address: { type: String },
-    phone: { type: String, required: true },
+    phone: { type: String },
     email: { type: String },
     consultant: { type: Schema.Types.ObjectId, ref: 'doctor' },
   },
