@@ -71,6 +71,7 @@ const fetchAllTest = async (
 
     andConditions.push({ $and: filterConditions });
   }
+
   const { page, limit, skip } = paginationHelpers.calculatePagination(options);
   const isCondition = andConditions.length > 0 ? { $and: andConditions } : {};
   const total = await Test.estimatedDocumentCount();
