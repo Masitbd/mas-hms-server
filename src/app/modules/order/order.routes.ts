@@ -46,8 +46,9 @@ routes.patch(
 );
 routes.post(
   '/statusChange/:oid',
-  auth(ENUM_USER_PEMISSION.MANAGE_ORDER),
+  auth(ENUM_USER_PEMISSION.DELIVER_TEST_REPORT),
   OrderController.statusChanger
 );
 
+routes.get('/payment-info/:uuid', OrderController.getOrderAndPaymentInfoByUUID);
 export const OrderRoutes = { routes };

@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import { IReportGroup } from '../reportGroup/reportGroup.interfaces';
 import {
   ITestForDescriptive,
@@ -13,6 +14,7 @@ export type IReport = {
   specimen?: string[];
   conductedBy: string;
   reportGroup: IReportGroup;
+  testId: string;
 };
 
 export type IReportForParameter = {
@@ -21,6 +23,7 @@ export type IReportForParameter = {
 
 export type IReportForDescriptive = {
   testResult?: ITestForDescriptive[];
+  test: Types.ObjectId;
 } & IReport;
 
 export type Isensitivity = {
@@ -31,6 +34,7 @@ export type Isensitivity = {
   breakPoint?: string;
 };
 export type ITestReportForMicrobiology = {
+  test: Types.ObjectId;
   specimen?: string;
   duration?: string;
   temperature?: string;

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import catchAsync from '../../../shared/catchAsync';
+import pick from '../../../shared/pick';
 import sendResponse from '../../../shared/sendResponse';
 import { IPatient } from './patient.interface';
 import { PatientService } from './patient.service';
@@ -45,7 +46,10 @@ const getSingle = catchAsync(
 
 const getAll = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    const result = await PatientService.fetchAll();
+    const searchTerm = pick(req?.query, ['searchTerm']);
+    const result = await PatientService.fetchAll(
+      searchTerm as Record<string, string>
+    );
 
     sendResponse<IPatient[]>(res, {
       statusCode: httpStatus.OK,

@@ -35,7 +35,6 @@ const doctorSchema = new Schema<IDoctor>({
   assignedME: {
     type: Schema.Types.ObjectId,
     ref: 'EmployeeRegistration',
-    required: true,
   },
   account_number: {
     type: String,

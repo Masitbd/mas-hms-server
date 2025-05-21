@@ -1,21 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-unused-vars */
 import { createCanvas } from 'canvas';
-import fs from 'fs';
 import httpStatus from 'http-status';
 import JsBarcode from 'jsbarcode';
 import mongoose, { PipelineStage, Types } from 'mongoose';
-import path from 'path';
+import { ENUM_RESULT_TYPE } from '../../../enums/resultTypeEnum';
 import { ENUM_TEST_STATUS } from '../../../enums/testStatusEnum';
 import ApiError from '../../../errors/ApiError';
 import { paginationHelpers } from '../../../helpers/paginationHelper';
 import { IPaginationOptions } from '../../../interfaces/pagination';
 import { orderIdGenerator } from '../../../utils/OrderIdGenerator';
-import { PDFGeneratorV2 } from '../../../utils/PdfGenerator.v2';
 import { Account } from '../account/account.model';
 import { CompanyInfo } from '../componayInfo/companyInfo.model';
 import { IDepartment } from '../departments/departments.interfaces';
+import { Department } from '../departments/departments.model';
 import { Doctor } from '../doctor/doctor.model';
+import { journalEntryService } from '../journal-entry/journalEntry.service';
 import { Miscellaneous } from '../miscellaneous/miscellaneous.model';
 import { Refund } from '../refund/refund.model';
 import { ReportGroup } from '../reportGroup/reportGroup.model';
@@ -52,6 +52,7 @@ const postOrder = async (params: IOrder) => {
     discountBasedOnParcent,
     discountGivenByDoctor,
   } = await totalPriceCalculator(params);
+
   order.tubePrice = tubePrice;
   order.totalPrice = totalTestPrice + tubePrice;
   order.dueAmount =
@@ -64,6 +65,16 @@ const postOrder = async (params: IOrder) => {
         order.cashDiscount -
         order.paid +
         vat;
+
+  const netPrice =
+    order.totalPrice -
+    discountBasedOnParcent -
+    discountGivenByDoctor -
+    order?.cashDiscount +
+    vat;
+
+  order.netPayable = netPrice;
+  // posting the journal entry
 
   let result;
   if (params.patientType === 'registered') {
@@ -109,6 +120,13 @@ const postOrder = async (params: IOrder) => {
     });
   }
 
+  await journalEntryService.postOrderJournalEntry({
+    orderAmount: netPrice,
+    due: order.dueAmount,
+    paid: order.paid,
+    token: order?.postedBy,
+    //! this should be replaced by frontend token
+  });
   return result;
 };
 const fetchAll = async ({
@@ -176,6 +194,7 @@ const fetchAll = async ({
         return;
       }
       if (field == 'patientType') {
+        // @ts-ignore
         if (otherFilterOption.patientType == ('' || 'all')) {
           return;
         }
@@ -446,6 +465,7 @@ const fetchIvoice = async (params: string) => {
       status: string;
       SL: string;
       discount: number;
+      deliveryTime: Date;
     }) => {
       if (test.test.hasTestTube) {
         test.test.testTubes.forEach((tube: IVacuumTube) => {
@@ -472,6 +492,7 @@ const fetchIvoice = async (params: string) => {
         status: test.status == ENUM_TEST_STATUS.REFUNDED,
         discount: test?.discount || 0,
         SL: test?.SL,
+        deliveryDate: new Date(test?.deliveryTime).toLocaleDateString(),
       });
     }
   );
@@ -484,6 +505,7 @@ const fetchIvoice = async (params: string) => {
         price: tube.price,
         status: false,
         SL: SL,
+        deliveryDate: 'N/A',
       });
       SL++;
     });
@@ -554,6 +576,18 @@ const fetchIvoice = async (params: string) => {
     marginValue = md as number[];
   }
 
+  // Fetching room names for printing
+  const departments = new Set();
+  for (const element of order[0]?.tests) {
+    departments.add(element?.test?.department);
+  }
+  const roomNames = await Department.find({
+    _id: {
+      $in: Array.from(departments ?? {}),
+    },
+    isRoomInfo: true,
+  }).select(['roomName', 'roomNo']);
+
   const dataBinding = await {
     items: items,
     isFree: order[0].discountedBy == 'free',
@@ -569,6 +603,12 @@ const fetchIvoice = async (params: string) => {
     consultant,
 
     createdAt: new Date(order[0].createdAt).toLocaleDateString(),
+    deliveryDate: new Date(
+      order[0].deliveryTime ?? new Date().toLocaleDateString()
+    ).toLocaleDateString(),
+    deliveryTime: new Date(
+      order[0].deliveryTime ?? new Date().toLocaleDateString()
+    ).toLocaleTimeString(),
     paid: Math.ceil(order[0].paid),
     tt: modifiedTransaction.length > 0,
     tds: modifiedTransaction,
@@ -618,28 +658,30 @@ const fetchIvoice = async (params: string) => {
 
     postedBy: order[0]?.postedBy,
     refBy: order[0]?.refBy,
+    roomNames,
   };
 
-  const templateHtml = fs.readFileSync(
-    path.resolve(__dirname, './template.html'),
-    'utf8'
-  );
+  // console.log(JSON.parse(JSON.stringify(dataBinding)));
+  // const templateHtml = fs.readFileSync(
+  //   path.resolve(__dirname, './template.html'),
+  //   'utf8'
+  // );
 
-  const bufferResult = await PDFGeneratorV2({
-    data: dataBinding,
-    templateHtml: templateHtml,
-    options: {
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        left: '0px',
-        top: '0px',
-        right: '0px',
-        bottom: '0px',
-      },
-    },
-  });
-  return bufferResult;
+  // const bufferResult = await PDFGeneratorV2({
+  //   data: dataBinding,
+  //   templateHtml: templateHtml,
+  //   options: {
+  //     format: 'A4',
+  //     printBackground: true,
+  //     margin: {
+  //       left: '0px',
+  //       top: '0px',
+  //       right: '0px',
+  //       bottom: '0px',
+  //     },
+  //   },
+  // });
+  return dataBinding;
 };
 
 const fetchSingle = async (params: string) => {
@@ -825,6 +867,7 @@ const fetchSingle = async (params: string) => {
   // const orderForCalculation = await Order.findOne({ oid: params });
   // const result = await totalPriceCalculator(orderForCalculation as IOrder);
 
+  // console.log(new Date().toTimeString(), JSON.parse(JSON.stringify(order[0])));
   return order;
 };
 
@@ -862,6 +905,12 @@ const dueCollection = async (
     throw new ApiError(httpStatus.NOT_FOUND, 'Order not found');
   }
 
+  if (params?.amount > doesExists?.dueAmount) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      'Amount cannot exceed the due amount'
+    );
+  }
   const dueAmount = doesExists.dueAmount - params.amount;
   const paid = doesExists.paid + params.amount;
 
@@ -876,11 +925,17 @@ const dueCollection = async (
     });
   }
 
-  const result = Order.findOneAndUpdate(
+  const result = await Order.findOneAndUpdate(
     { oid: oid },
     { dueAmount: dueAmount, paid: paid },
     { new: true }
   );
+
+  // !posting journal entry
+  await journalEntryService.postJournalEntryForDueCollection({
+    amount: params.amount,
+    token: user,
+  });
   return result;
 };
 
@@ -889,6 +944,7 @@ const singleOrderstatusChanger = async (params: {
   oid: string;
   status: string;
   user: string;
+  test: string;
 }) => {
   const order = await Order.findOne({ oid: params.oid })
     .populate('tests.test')
@@ -917,7 +973,44 @@ const singleOrderstatusChanger = async (params: {
     if (
       'reportGroup' in test.test &&
       reportGroup._id.equals(test.test.reportGroup) &&
-      test.status !== 'refunded'
+      test.status !== 'refunded' &&
+      reportGroup?.testResultType == ENUM_RESULT_TYPE.PARAMETER_BASED
+    ) {
+      if (test.status == 'delivered') {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          'Test report had already delivered. Now status cannot be changed'
+        );
+      }
+      test.status = params.status;
+      if (
+        'isCommissionFiexed' in reportGroup.department &&
+        !reportGroup.department.isCommissionFiexed
+      ) {
+        commission += Math.ceil(
+          (test.test.price * Number(department.commissionParcentage)) / 100
+        );
+      }
+      if (department.isCommissionFiexed) {
+        commission += commission + Number(department.fixedCommission);
+      }
+      if (test.discount) {
+        discount += Math.ceil((test.test.price * Number(test.discount)) / 100);
+        return;
+      }
+      if (order.parcentDiscount) {
+        discount += Math.ceil(
+          (test.test.price * Number(order.parcentDiscount)) / 100
+        );
+        return;
+      } else return;
+    } else if (
+      'reportGroup' in test.test &&
+      reportGroup._id.equals(test.test.reportGroup) &&
+      test.status !== 'refunded' &&
+      reportGroup?.testResultType !== ENUM_RESULT_TYPE.PARAMETER_BASED &&
+      params?.test &&
+      test?.test?._id?.equals(params.test)
     ) {
       if (test.status == 'delivered') {
         throw new ApiError(
@@ -968,6 +1061,7 @@ const singleOrderstatusChanger = async (params: {
       break;
   }
 
+  console.log(params);
   if (commission && order.refBy) {
     const doctor = await Doctor.findOne({ _id: order.refBy });
     if (doctor) {
@@ -980,6 +1074,12 @@ const singleOrderstatusChanger = async (params: {
         postedBy: params.user,
       });
     }
+
+    // !posting journal entries
+    await journalEntryService.postJournalEntryForDoctorCommission({
+      amount: commission,
+      token: params.user,
+    });
   }
   const result = await order.save();
   return result;
@@ -999,8 +1099,6 @@ const getIncomeStatementFromDB = async (payload: {
 
   endDate.setUTCHours(23, 59, 59, 999);
 
-  
-
   const query = [
     {
       $match: {
@@ -1008,6 +1106,7 @@ const getIncomeStatementFromDB = async (payload: {
           $gte: startDate,
           $lte: endDate,
         },
+        remarks: { $in: [null, '', undefined] },
       },
     },
     {
@@ -1217,6 +1316,7 @@ const getDueBillsDetailFromDB = async (query: Record<string, any>) => {
       $lte: toDate,
     };
   }
+  match.remarks = { $in: [null, '', undefined] };
 
   const result = await Order.aggregate([
     // Apply the match filter for oid, refBy, or date range
@@ -1439,6 +1539,37 @@ const fetchOrderPostedBy = async () => {
     },
   ]);
 };
+
+const fetchOderAndPaymentInfoByPatient = async (uuid: string) => {
+  if (!uuid) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'No UUID Provided');
+  }
+
+  return Order.aggregate([
+    {
+      $match: { uuid: uuid },
+    },
+    {
+      $project: {
+        _id: 1,
+        uuid: 1,
+        totalPrice: 1,
+        netPayable: 1,
+        oid: 1,
+        createdAt: 1,
+        dueAmount: 1,
+      },
+    },
+    {
+      $lookup: {
+        from: 'transations',
+        localField: '_id',
+        foreignField: 'ref',
+        as: 'transactions',
+      },
+    },
+  ]);
+};
 export const OrderService = {
   postOrder,
   fetchAll,
@@ -1450,4 +1581,5 @@ export const OrderService = {
   getIncomeStatementFromDB,
   getDueBillsDetailFromDB,
   fetchOrderPostedBy,
+  fetchOderAndPaymentInfoByPatient,
 };

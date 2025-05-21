@@ -90,6 +90,11 @@ const parameterBasedSchema = new Schema<IReportForParameter>(
 // for parameterBased
 const descriptiveBasedSchema = new Schema<IReportForDescriptive>(
   {
+    test: {
+      type: Schema.Types.ObjectId,
+      ref: 'Test',
+      required: true,
+    },
     testResult: [
       {
         investigation: {
@@ -116,6 +121,11 @@ const descriptiveBasedSchema = new Schema<IReportForDescriptive>(
 
 const microbiologySchema = new Schema<ITestReportForMicrobiology>(
   {
+    test: {
+      type: Schema.Types.ObjectId,
+      ref: 'Test',
+      required: true,
+    },
     bacteria: {
       type: String,
     },

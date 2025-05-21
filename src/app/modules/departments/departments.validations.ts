@@ -25,6 +25,21 @@ const createDepartmentZodSchema = z.object({
         required_error: 'Department description is required',
       })
       .optional(),
+    isRoomInfo: z
+      .boolean({
+        required_error: 'Room description is required',
+      })
+      .optional(),
+    roomName: z
+      .string({
+        required_error: 'Room Name is required',
+      })
+      .optional(),
+    roomNo: z
+      .string({
+        required_error: 'Room no is required',
+      })
+      .optional(),
   }),
 });
 
@@ -63,6 +78,19 @@ const updateDepartmentZodSchema = z.object({
         required_error: 'Department description is required',
       })
       .optional(),
+    isRoomInfo: z
+      .boolean({
+        required_error: 'Room description is required',
+      })
+      .optional(),
+    roomName: z
+      .string({
+        required_error: 'Room Name is required',
+      })
+      .optional(),
+    roomNo: z.string({
+      required_error: 'Room no is required',
+    }),
   }),
 });
 

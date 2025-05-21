@@ -120,6 +120,7 @@ const statusChanger = catchAsync(
       reportGroup: req.body.reportGroup,
       status: req.body.status,
       user: user,
+      test: req?.body?.test ?? undefined,
     });
     // res.send(result);
     sendResponse(res, {
@@ -160,6 +161,20 @@ const getOrderPostedBy = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getOrderAndPaymentInfoByUUID = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await OrderService.fetchOderAndPaymentInfoByPatient(
+      req?.params?.uuid
+    );
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Order and payment info retrieved successfully',
+      data: result,
+    });
+  }
+);
+
 export const OrderController = {
   createNewOrder,
   getAllOrder,
@@ -171,4 +186,5 @@ export const OrderController = {
   getIncomeStatement,
   getDueDetails,
   getOrderPostedBy,
+  getOrderAndPaymentInfoByUUID,
 };

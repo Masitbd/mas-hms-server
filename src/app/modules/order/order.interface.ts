@@ -22,6 +22,7 @@ export type IOrder = {
   parcentDiscount: number;
   deliveryTime: string;
   status: string;
+  remarks: string;
   dueAmount: number;
   refBy?: Types.ObjectId;
   patientType: string;
@@ -31,6 +32,7 @@ export type IOrder = {
   postedBy: string;
   refundData?: Partial<IRefund>;
   tubePrice: number;
+  netPayable: number;
 };
 
 export type IorderFilterableFields =
