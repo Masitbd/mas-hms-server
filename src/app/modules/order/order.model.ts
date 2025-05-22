@@ -27,6 +27,7 @@ const orderSchema = new Schema<IOrder>(
     dueAmount: { type: Number, required: true },
     paid: { type: Number, required: true },
     vat: { type: Number },
+    remarks: { type: String },
     refBy: {
       type: Schema.Types.ObjectId,
       ref: 'doctor',

@@ -12,7 +12,7 @@ routes.post(
   validateRequest(TestValidtion.testValidator),
   TestController.createNewTest
 );
-routes.get('/', auth(ENUM_USER_PEMISSION.USER), TestController.getAllTest);
+routes.get('/', TestController.getAllTest);
 routes.get(
   '/:id',
   auth(ENUM_USER_PEMISSION.USER),

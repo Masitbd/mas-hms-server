@@ -22,6 +22,7 @@ export type IOrder = {
   parcentDiscount: number;
   deliveryTime: string;
   status: string;
+  remarks: string;
   dueAmount: number;
   refBy?: Types.ObjectId;
   patientType: string;

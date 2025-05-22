@@ -58,6 +58,7 @@ const testSchema = new Schema<ITest, TestModel>(
       type: Schema.Types.ObjectId,
       required: true,
       ref: 'HospitalGroup',
+      index: true,
     },
     price: {
       type: Number,

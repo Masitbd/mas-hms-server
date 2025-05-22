@@ -194,6 +194,7 @@ const fetchAll = async ({
         return;
       }
       if (field == 'patientType') {
+        // @ts-ignore
         if (otherFilterOption.patientType == ('' || 'all')) {
           return;
         }
@@ -1098,84 +1099,6 @@ const getIncomeStatementFromDB = async (payload: {
 
   endDate.setUTCHours(23, 59, 59, 999);
 
-  // const query = [
-  //   {
-  //     $match: {
-  //       createdAt: {
-  //         $gte: startDate,
-  //         $lte: endDate,
-  //       },
-  //     },
-  //   },
-  //   {
-  //     $lookup: {
-  //       from: 'tests',
-  //       localField: 'tests.test',
-  //       foreignField: '_id',
-  //       as: 'testDetails',
-  //     },
-  //   },
-  //   {
-  //     $unwind: {
-  //       path: '$testDetails', // unwind to get each test
-  //       preserveNullAndEmptyArrays: true,
-  //     },
-  //   },
-  //   {
-  //     $group: {
-  //       _id: {
-  //         oid: '$oid',
-  //         groupDate: {
-  //           $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
-  //         },
-  //       },
-  //       totalPrice: { $first: '$totalPrice' },
-  //       totalTestPrice: { $sum: '$testDetails.price' },
-  //       cashDiscount: { $first: '$cashDiscount' },
-  //       parcentDiscount: { $first: '$parcentDiscount' },
-  //       dueAmount: { $first: '$dueAmount' },
-  //       paid: { $first: '$paid' },
-  //       vat: { $first: '$vat' },
-  //       uuid: { $first: '$uuid' }, // Keep uuid if needed
-  //       records: {
-  //         $push: {
-  //           oid: '$oid',
-  //           uuid: '$uuid',
-  //           totalPrice: '$totalPrice',
-  //           totalTestPrice: { $sum: '$testDetails.price' },
-  //           cashDiscount: '$cashDiscount',
-  //           parcentDiscount: '$parcentDiscount',
-  //           dueAmount: '$dueAmount',
-  //           paid: '$paid',
-  //           vat: '$vat',
-  //         },
-  //       },
-  //     },
-  //   },
-  //   {
-  //     $sort: { oid: -1 }, // Sort by oid
-  //   },
-  //   {
-  //     $group: {
-  //       _id: '$_id.groupDate',
-
-  //       records: {
-  //         $push: {
-  //           $first: '$records',
-  //         },
-  //       },
-  //     },
-  //   },
-  //   {
-  //     $project: {
-  //       _id: 0,
-  //       groupDate: '$_id',
-
-  //       records: 1,
-  //     },
-  //   },
-  // ];
-
   const query = [
     {
       $match: {
@@ -1183,6 +1106,7 @@ const getIncomeStatementFromDB = async (payload: {
           $gte: startDate,
           $lte: endDate,
         },
+        remarks: { $in: [null, '', undefined] },
       },
     },
     {
@@ -1392,6 +1316,7 @@ const getDueBillsDetailFromDB = async (query: Record<string, any>) => {
       $lte: toDate,
     };
   }
+  match.remarks = { $in: [null, '', undefined] };
 
   const result = await Order.aggregate([
     // Apply the match filter for oid, refBy, or date range
