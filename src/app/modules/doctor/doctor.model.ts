@@ -4,7 +4,6 @@ import { IDoctor } from './doctor.interface';
 const doctorSchema = new Schema<IDoctor>({
   title: {
     type: String,
-    required: true,
   },
   name: {
     type: String,
