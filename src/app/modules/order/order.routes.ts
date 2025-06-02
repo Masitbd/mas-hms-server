@@ -31,7 +31,7 @@ routes.get('/', auth(ENUM_USER_PEMISSION.USER), OrderController.getAllOrder);
 routes.get('/:oid', auth(ENUM_USER_PEMISSION.USER), OrderController.getSIngle);
 routes.patch(
   '/:id',
-  auth(ENUM_USER_PEMISSION.MANAGE_ORDER),
+  auth(ENUM_USER_PEMISSION.ADMIN, ENUM_USER_PEMISSION.SUPER_ADMIN),
   OrderController.updateOrder
 );
 routes.get(
