@@ -194,6 +194,7 @@ const fetchAll = async ({
         return;
       }
       if (field == 'patientType') {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         if (otherFilterOption.patientType == ('' || 'all')) {
           return;
@@ -230,68 +231,90 @@ const orderPatch = async (param: {
   data: Partial<IOrder>;
   user: string;
 }) => {
-  const { data, id, user } = param;
-  const doesExists = await Order.findOne({ _id: param.id });
-  if (!doesExists) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Order not found');
-  }
-  const {
-    cashDiscount,
-    discountBasedOnParcent,
-    discountGivenByDoctor,
-    totalTestPrice,
-    tubePrice,
-    vat,
-  } = await totalPriceCalculator(data as IOrder);
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { data, id, user } = param;
+    const doesExists = await Order.findOne({ _id: param.id }).session(session);
+    if (!doesExists) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Order not found');
+    }
+    const {
+      cashDiscount,
+      discountBasedOnParcent,
+      discountGivenByDoctor,
+      totalTestPrice,
+      tubePrice,
+      vat,
+    } = await totalPriceCalculator(data as IOrder);
 
-  // CHecking for paid amount
-  if (data.paid) {
-    // IF paid amount is greater the amount will be marked as collection fon order
-    if (data.paid > doesExists.paid) {
-      const account = await Account.find({ title: 'Order' });
-      await TransactionService.postTransaction({
-        amount: data.paid - doesExists.paid,
-        description: 'Payment for order',
-        transactionType: 'debit',
-        ref: id as unknown as Types.ObjectId,
-        uuid: account[0].uuid,
-        postedBy: user,
-      });
+    // CHecking for paid amount
+    if (data.paid) {
+      // IF paid amount is greater the amount will be marked as collection fon order
+      if (data.paid > doesExists.paid) {
+        const account = await Account.find({ title: 'Order' }).session(session);
+        await TransactionService.postTransaction({
+          amount: data.paid - doesExists.paid,
+          description: 'Payment for order',
+          transactionType: 'debit',
+          ref: id as unknown as Types.ObjectId,
+          uuid: account[0].uuid,
+          postedBy: user,
+        });
+      }
     }
 
-    // If paid amount is less than the amount will be marked as refund for order
-    // if (data.paid < doesExists.paid) {
-    //   await Refund.create({
-    //     oid: data?.oid,
-    //     discount: 0,
-    //     grossAmount: doesExists.paid - data.paid,
-    //     netAmount: doesExists.paid - data.paid,
-    //     refundApplied: 0,
-    //     refundedBy: user,
-    //     remainingRefund: doesExists.paid - data.paid,
-    //     id: 0,
-    //     vat: data?.vat,
-    //   });
-    // }
+    data.tubePrice = tubePrice;
+    data.totalPrice = totalTestPrice + tubePrice;
+    data.dueAmount =
+      data.discountedBy == 'free'
+        ? 0
+        : totalTestPrice +
+          tubePrice -
+          discountBasedOnParcent -
+          discountGivenByDoctor -
+          (data?.cashDiscount ?? 0) -
+          (data?.paid ?? 0) +
+          vat;
+
+    const result = await Order.findOneAndUpdate({ _id: param.id }, data, {
+      new: true,
+    }).session(session);
+
+    // For Journal entry
+    const oldNetPayable = doesExists.netPayable;
+    const newNetPayable =
+      data.totalPrice -
+      discountBasedOnParcent -
+      discountGivenByDoctor -
+      (data?.cashDiscount ?? 0) +
+      vat;
+    const oldDueAmount = doesExists?.dueAmount;
+    const newDueAmount = data.dueAmount;
+    const oldPaidAmount = doesExists?.paid;
+    const newPaidAmount = data.paid ?? 0;
+    await journalEntryService.postJournalEntryForPatch({
+      newDueAmount: newDueAmount,
+      oldPaidAmount: oldPaidAmount,
+      newPaidAmount: newPaidAmount,
+      oldDueAmount: oldDueAmount,
+      oldNetPayable: oldNetPayable,
+      newNetPayable: newNetPayable,
+      token: 'String',
+    });
+
+    await session.commitTransaction();
+    return result;
+  } catch (error) {
+    console.error(error);
+    await session.abortTransaction();
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      (error ?? 'Internal Server Error') as string
+    );
+  } finally {
+    await session.endSession();
   }
-
-  data.tubePrice = tubePrice;
-  data.totalPrice = totalTestPrice + tubePrice;
-  data.dueAmount =
-    data.discountedBy == 'free'
-      ? 0
-      : totalTestPrice +
-        tubePrice -
-        discountBasedOnParcent -
-        discountGivenByDoctor -
-        (data?.cashDiscount ?? 0) -
-        (data?.paid ?? 0) +
-        vat;
-
-  const result = await Order.findOneAndUpdate({ _id: param.id }, data, {
-    new: true,
-  });
-  return result;
 };
 
 const fetchIvoice = async (params: string) => {

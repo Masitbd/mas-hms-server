@@ -83,12 +83,14 @@ const fetchAllTest = async (
 
   if (flag?.flag == 'o') {
     result = await Test.find(isCondition)
+      .sort({ testCode: 1 })
       .limit(limit)
       .skip(skip)
       .populate('testTube')
       .populate({ path: 'department' });
   } else {
     result = await Test.find(isCondition)
+      .sort({ testCode: 1 })
       .limit(limit)
       .skip(skip)
       .populate({ path: 'department' })
