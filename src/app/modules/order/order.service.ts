@@ -1139,6 +1139,12 @@ const getIncomeStatementFromDB = async (payload: {
       },
     },
     {
+      $unwind: {
+        path: '$tests', // Unwind the tests array from the order collection
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
       $lookup: {
         from: 'tests',
         localField: 'tests.test',
@@ -1197,9 +1203,6 @@ const getIncomeStatementFromDB = async (payload: {
         cd: { $ifNull: ['$cashDiscount', 0] },
 
         // Total Discount: Sum of cash discount (cd) and percent discount (pd)
-        // totalDiscount: {
-        //   $sum: [{ $ifNull: ['$pd', 0] }, { $ifNull: ['$cd', 0] }],
-        // },
 
         vatAmount: {
           $cond: {
@@ -1225,6 +1228,13 @@ const getIncomeStatementFromDB = async (payload: {
         },
       },
     },
+    {
+      $addFields: {
+        totalDiscount: {
+          $sum: [{ $ifNull: ['$pd', 0] }, { $ifNull: ['$cd', 0] }],
+        },
+      },
+    },
 
     {
       $group: {
@@ -1236,52 +1246,17 @@ const getIncomeStatementFromDB = async (payload: {
         },
         totalPrice: { $first: '$totalPrice' },
         totalTestPrice: { $sum: '$testDetails.price' },
-        totalDiscount: { $sum: '$totalDiscount' }, // Sum of all discounts
+        totalDiscount: { $first: '$totalDiscount' }, // Sum of all discounts
         discountedPrice: { $first: '$discountedPrice' },
         vat: { $first: '$vatAmount' }, // VAT in amount
         finalPrice: { $first: '$finalPrice' }, // Total after adding VAT
         dueAmount: { $first: '$dueAmount' },
         paid: { $first: '$paid' },
         uuid: { $first: '$uuid' },
-        records: {
-          $push: {
-            oid: '$oid',
-            uuid: '$uuid',
-            totalPrice: '$totalPrice',
-            totalTestPrice: { $sum: '$testDetails.price' },
-
-            vat: '$vatAmount',
-            finalPrice: '$finalPrice',
-            cashDiscount: '$cd',
-            parcentDiscountAmount: '$pd',
-
-            totalDis: {
-              $add: [
-                { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
-                { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
-              ],
-            },
-
-            totalAmount: {
-              $subtract: [
-                {
-                  $add: [
-                    { $toDouble: { $ifNull: ['$totalPrice', 0] } }, // Use totalPrice directly
-                    { $ifNull: ['$vatAmount', 0] }, // Ensure VAT is treated properly
-                  ],
-                },
-                {
-                  $add: [
-                    { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
-                    { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
-                  ],
-                },
-              ],
-            },
-
-            paid: '$paid',
-          },
-        },
+        oid: { $first: '$oid' },
+        cashDiscount: { $sum: '$cd' },
+        parcentDiscountAmount: { $sum: '$pd' },
+        totalAmount: { $first: '$netPayable' },
       },
     },
     {
@@ -1291,7 +1266,7 @@ const getIncomeStatementFromDB = async (payload: {
       $group: {
         _id: '$_id.groupDate',
         records: {
-          $push: { $first: '$records' },
+          $push: '$$ROOT',
         },
       },
     },
