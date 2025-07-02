@@ -625,7 +625,7 @@ const fetchIvoice = async (params: string) => {
     address: order[0].patient.address,
     consultant,
 
-    createdAt: new Date(order[0].createdAt).toLocaleDateString(),
+    createdAt: new Date(order[0].createdAt).toUTCString(),
     deliveryDate: new Date(
       order[0].deliveryTime ?? new Date().toLocaleDateString()
     ).toLocaleDateString(),
@@ -1256,7 +1256,8 @@ const getIncomeStatementFromDB = async (payload: {
         oid: { $first: '$oid' },
         cashDiscount: { $sum: '$cd' },
         parcentDiscountAmount: { $sum: '$pd' },
-        totalAmount: { $first: '$netPayable' },
+        totalAmount: { $first: '$totalPrice' },
+        totalDis: { $sum: '$totalDiscount' },
       },
     },
     {
