@@ -1282,6 +1282,8 @@ const getIncomeStatementFromDB = async (payload: {
     },
   ];
 
+  // Fixed
+
   const result = await Order.aggregate(query as PipelineStage[]);
   return result;
 };
