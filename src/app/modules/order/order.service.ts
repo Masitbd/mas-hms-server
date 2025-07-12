@@ -1229,14 +1229,6 @@ const getIncomeStatementFromDB = async (payload: {
       },
     },
     {
-      $addFields: {
-        totalDiscount: {
-          $sum: [{ $ifNull: ['$pd', 0] }, { $ifNull: ['$cd', 0] }],
-        },
-      },
-    },
-
-    {
       $group: {
         _id: {
           oid: '$oid',
@@ -1256,10 +1248,20 @@ const getIncomeStatementFromDB = async (payload: {
         oid: { $first: '$oid' },
         cashDiscount: { $first: '$cd' },
         parcentDiscountAmount: { $sum: '$pd' },
-        totalAmount: { $first: '$totalPrice' },
-        totalDis: { $sum: '$totalDiscount' },
+        totalAmount: { $first: '$netPayable' },
       },
     },
+    {
+      $addFields: {
+        totalDiscount: {
+          $add: [{ $ifNull: ['$pd', 0] }, { $ifNull: ['$cashDiscount', 0] }],
+        },
+        totalDis: {
+          $add: [{ $ifNull: ['$pd', 0] }, { $ifNull: ['$cashDiscount', 0] }],
+        },
+      },
+    },
+
     {
       $sort: { oid: -1 },
     },
@@ -1279,6 +1281,8 @@ const getIncomeStatementFromDB = async (payload: {
       },
     },
   ];
+
+  // Fixed
 
   const result = await Order.aggregate(query as PipelineStage[]);
   return result;
