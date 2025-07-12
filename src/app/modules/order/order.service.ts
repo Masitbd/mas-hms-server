@@ -1254,7 +1254,7 @@ const getIncomeStatementFromDB = async (payload: {
         paid: { $first: '$paid' },
         uuid: { $first: '$uuid' },
         oid: { $first: '$oid' },
-        cashDiscount: { $sum: '$cd' },
+        cashDiscount: { $first: '$cd' },
         parcentDiscountAmount: { $sum: '$pd' },
         totalAmount: { $first: '$totalPrice' },
         totalDis: { $sum: '$totalDiscount' },
