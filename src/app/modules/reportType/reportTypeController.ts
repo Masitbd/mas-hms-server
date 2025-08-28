@@ -47,9 +47,20 @@ const getAllReportType = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const removeReportType = catchAsync(async (req: Request, res: Response) => {
+  const result = await ReportTypeService.removeReportType(req?.params?.id);
+  sendResponse(res, {
+    data: result,
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Report Type was Deleted successfully',
+  });
+});
+
 export const ReportTypeController = {
   postNewReportType,
   updateReportType,
   getSingleReportType,
   getAllReportType,
+  removeReportType,
 };
