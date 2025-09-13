@@ -35,7 +35,7 @@ const getEmployeeIncomeStatementFromDB = async (
     },
     {
       $unwind: {
-        path: '$userDetails', // Unwind the user details array
+        path: '$userDetails',
         preserveNullAndEmptyArrays: true,
       },
     },
@@ -45,44 +45,56 @@ const getEmployeeIncomeStatementFromDB = async (
           groupDate: {
             $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
           },
-          postedBy: '$postedBy', // Group by user ID (postedBy)
-          name: '$userDetails.name', // Include user name in the group
+          postedBy: '$postedBy',
+          name: '$userDetails.name',
         },
-        totalPaid: { $sum: '$paid' }, // Sum total paid amount for each
+        totalPaid: { $sum: '$paid' },
         records: {
           $push: {
             oid: '$oid',
             uuid: '$uuid',
+            name: '$patient.name',
             amount: '$paid',
-            totalPaid: { $sum: '$paid' },
             date: '$createdAt',
           },
         },
       },
     },
     {
-      $sort: { '_id.groupDate': -1 }, // Sort by group date
+      $sort: { '_id.groupDate': -1 },
     },
     {
       $group: {
-        _id: '$_id.groupDate', // Group by date
+        _id: '$_id.groupDate',
         users: {
           $push: {
-            postedBy: '$_id.name',
-            totalPaid: { $sum: '$paid' }, // Include total paid amount for each user
-            paid: '$paid',
-            totalPrice: '$totalPrice',
-            vat: '$vat',
+            postedBy: '$_id.postedBy',
+            name: '$_id.name',
+            totalPaid: '$totalPaid',
             records: '$records',
           },
         },
+        dayTotal: { $sum: '$totalPaid' },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        data: {
+          $push: {
+            groupDate: '$_id',
+            users: '$users',
+            dayTotal: '$dayTotal',
+          },
+        },
+        grandTotal: { $sum: '$dayTotal' },
       },
     },
     {
       $project: {
         _id: 0,
-        groupDate: '$_id',
-        users: 1,
+        records: '$data',
+        grandTotal: 1,
       },
     },
   ];
