@@ -1098,187 +1098,6 @@ const getIncomeStatementFromDB = async (payload: {
 
   endDate.setUTCHours(23, 59, 59, 999);
 
-  // const query = [
-  //   {
-  //     $match: {
-  //       createdAt: {
-  //         $gte: startDate,
-  //         $lte: endDate,
-  //       },
-  //       remarks: { $in: [null, '', undefined] },
-  //     },
-  //   },
-  //   {
-  //     $unwind: {
-  //       path: '$tests', // Unwind the tests array from the order collection
-  //       preserveNullAndEmptyArrays: true,
-  //     },
-  //   },
-  //   {
-  //     $lookup: {
-  //       from: 'tests',
-  //       localField: 'tests.test',
-  //       foreignField: '_id',
-  //       as: 'testDetails',
-  //     },
-  //   },
-  //   {
-  //     $unwind: {
-  //       path: '$testDetails',
-  //       preserveNullAndEmptyArrays: true,
-  //     },
-  //   },
-  //   {
-  //     $addFields: {
-  //       pd: {
-  //         $cond: {
-  //           if: {
-  //             $or: [
-  //               { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] }, // Test-level discount
-  //               { $gt: [{ $ifNull: ['$parcentDiscount', 0] }, 0] }, // Overall percent discount
-  //             ],
-  //           },
-  //           then: {
-  //             $cond: {
-  //               if: { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] }, // If test-level discount exists
-  //               then: {
-  //                 $divide: [
-  //                   {
-  //                     $multiply: [
-  //                       '$testDetails.price',
-  //                       { $ifNull: ['$tests.discount', 0] },
-  //                     ],
-  //                   },
-  //                   100,
-  //                 ],
-  //               },
-  //               else: {
-  //                 $divide: [
-  //                   {
-  //                     $multiply: [
-  //                       '$testDetails.price',
-  //                       { $ifNull: ['$parcentDiscount', 0] },
-  //                     ],
-  //                   },
-  //                   100,
-  //                 ],
-  //               },
-  //             },
-  //           },
-  //           else: 0, // No discount exists
-  //         },
-  //       },
-
-  //       // Cash Discount (cd) applied to the test price
-  //       cd: { $ifNull: ['$cashDiscount', 0] },
-
-  //       // Total Discount: Sum of cash discount (cd) and percent discount (pd)
-  //       // totalDiscount: {
-  //       //   $sum: [{ $ifNull: ['$pd', 0] }, { $ifNull: ['$cd', 0] }],
-  //       // },
-
-  //       vatAmount: {
-  //         $cond: {
-  //           if: { $gt: ['$vat', 0] }, // Check if VAT exists
-  //           then: {
-  //             $multiply: [
-  //               {
-  //                 $subtract: [
-  //                   '$totalPrice',
-  //                   {
-  //                     $add: [
-  //                       { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
-  //                       { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
-  //                     ],
-  //                   },
-  //                 ], // Net amount after discount
-  //               },
-  //               { $divide: ['$vat', 100] }, // Calculate VAT amount
-  //             ],
-  //           },
-  //           else: 0, // No VAT to add
-  //         },
-  //       },
-  //     },
-  //   },
-
-  //   {
-  //     $group: {
-  //       _id: {
-  //         oid: '$oid',
-  //         groupDate: {
-  //           $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
-  //         },
-  //       },
-  //       totalPrice: { $first: '$totalPrice' },
-  //       totalTestPrice: { $sum: '$testDetails.price' },
-  //       totalDiscount: { $sum: '$totalDiscount' }, // Sum of all discounts
-  //       discountedPrice: { $first: '$discountedPrice' },
-  //       vat: { $first: '$vatAmount' }, // VAT in amount
-  //       finalPrice: { $first: '$finalPrice' }, // Total after adding VAT
-  //       dueAmount: { $first: '$dueAmount' },
-  //       paid: { $first: '$paid' },
-  //       uuid: { $first: '$uuid' },
-  //       records: {
-  //         $push: {
-  //           oid: '$oid',
-  //           uuid: '$uuid',
-  //           totalPrice: '$totalPrice',
-  //           totalTestPrice: { $sum: '$testDetails.price' },
-
-  //           vat: '$vatAmount',
-  //           finalPrice: '$finalPrice',
-  //           cashDiscount: '$cd',
-  //           parcentDiscountAmount: '$pd',
-
-  //           totalDis: {
-  //             $add: [
-  //               { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
-  //               { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
-  //             ],
-  //           },
-
-  //           totalAmount: {
-  //             $subtract: [
-  //               {
-  //                 $add: [
-  //                   { $toDouble: { $ifNull: ['$totalPrice', 0] } }, // Use totalPrice directly
-  //                   { $ifNull: ['$vatAmount', 0] }, // Ensure VAT is treated properly
-  //                 ],
-  //               },
-  //               {
-  //                 $add: [
-  //                   { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
-  //                   { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
-  //                 ],
-  //               },
-  //             ],
-  //           },
-
-  //           paid: '$paid',
-  //         },
-  //       },
-  //     },
-  //   },
-  //   {
-  //     $sort: { oid: -1 },
-  //   },
-  //   {
-  //     $group: {
-  //       _id: '$_id.groupDate',
-  //       records: {
-  //         $push: { $first: '$records' },
-  //       },
-  //     },
-  //   },
-  //   {
-  //     $project: {
-  //       _id: 0,
-  //       groupDate: '$_id',
-  //       records: 1,
-  //     },
-  //   },
-  // ];
   const query = [
     {
       $match: {
@@ -1286,7 +1105,7 @@ const getIncomeStatementFromDB = async (payload: {
           $gte: startDate,
           $lte: endDate,
         },
-        status:{$ne:"refunded"},
+        status: { $ne: 'refunded' },
         remarks: { $in: [null, '', undefined] },
       },
     },
@@ -1475,6 +1294,8 @@ const getDueBillsDetailFromDB = async (query: Record<string, any>) => {
       $lte: toDate,
     };
   }
+
+  match.dueAmount = {$gt:0}
   match.remarks = { $in: [null, '', undefined] };
 
   const result = await Order.aggregate([
@@ -1632,6 +1453,110 @@ const getDueBillsDetailFromDB = async (query: Record<string, any>) => {
         },
         testDetails: { label: 1, price: 1 }, // Include only 'label' and 'price' from test details
         __t: 1,
+        createdAt: 1,
+      },
+    },
+
+    // Group the results by refBy.name
+    {
+      $group: {
+        _id: '$refDoctor.name', // Group by doctor name (refBy)
+        records: {
+          $push: {
+            oid: '$oid',
+            totalPrice: '$totalPrice',
+            cashDiscount: '$cashDiscount',
+            parcentDiscount: '$parcentDiscount',
+            dueAmount: '$dueAmount',
+            paid: '$paid',
+            totalAmount: '$totalAmount',
+            patientData: '$patientData',
+            testDetails: '$testDetails',
+            createdAt: '$createdAt',
+          },
+        },
+      },
+    },
+
+    // Rename the _id field to refBy for clarity
+    {
+      $project: {
+        _id: 0, // Exclude _id
+        refBy: '$_id', // Rename _id to refBy
+        records: 1, // Include the records array
+      },
+    },
+  ]);
+
+  return result;
+};
+//! Due Bill Collection Statement
+const getDueCollectionStatementFromDB = async (query: Record<string, any>) => {
+  const { oid, startDate, endDate } = query;
+
+  const fromDate = new Date(query.startDate);
+  const toDate = new Date(query.endDate);
+  startDate.setUTCHours(0, 0, 0, 0);
+
+  endDate.setUTCHours(23, 59, 59, 999);
+  // Initialize the match stage with an empty filter
+  const match: Record<string, any> = {};
+
+  // Apply OID filter if provided
+  if (oid) {
+    match.oid = oid;
+  }
+
+  // Apply date range filter if provided
+
+  match.createdAt = {
+    $gte: fromDate,
+    $lte: toDate,
+  };
+  match.description = 'Collected due amount';
+
+  const result = await Transation.aggregate([
+    // Apply the match filter for oid, refBy, or date range
+    { $match: match },
+
+    {
+      $lookup: {
+        from: 'orders',
+        localField: 'ref',
+        foreignField: '_id',
+        as: 'orderInfo',
+      },
+    },
+
+    { $unwind: { path: '$orderInfo', preserveNullAndEmptyArrays: true } },
+
+    // Lookup the 'tests.test' field to populate test details
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'postedBy',
+        foreignField: 'uuid',
+        as: 'employeeDetails',
+      },
+    },
+
+    {
+      $unwind: { path: '$employeeDetails', preserveNullAndEmptyArrays: true },
+    },
+
+    // Project required fields
+    {
+      $project: {
+        _id: 1,
+        oid: 1,
+        totalPrice: 1,
+        cashDiscount: 1,
+        parcentDiscount: '$pd',
+
+        paid: 1,
+        vat: 1,
+        refDoctor: { name: 1 }, // Include only the doctor's name
+
         createdAt: 1,
       },
     },
