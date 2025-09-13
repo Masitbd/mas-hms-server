@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-unused-vars */
-import { createCanvas } from 'canvas';
 import httpStatus from 'http-status';
 import JsBarcode from 'jsbarcode';
 import mongoose, { PipelineStage, Types } from 'mongoose';
@@ -1099,6 +1098,187 @@ const getIncomeStatementFromDB = async (payload: {
 
   endDate.setUTCHours(23, 59, 59, 999);
 
+  // const query = [
+  //   {
+  //     $match: {
+  //       createdAt: {
+  //         $gte: startDate,
+  //         $lte: endDate,
+  //       },
+  //       remarks: { $in: [null, '', undefined] },
+  //     },
+  //   },
+  //   {
+  //     $unwind: {
+  //       path: '$tests', // Unwind the tests array from the order collection
+  //       preserveNullAndEmptyArrays: true,
+  //     },
+  //   },
+  //   {
+  //     $lookup: {
+  //       from: 'tests',
+  //       localField: 'tests.test',
+  //       foreignField: '_id',
+  //       as: 'testDetails',
+  //     },
+  //   },
+  //   {
+  //     $unwind: {
+  //       path: '$testDetails',
+  //       preserveNullAndEmptyArrays: true,
+  //     },
+  //   },
+  //   {
+  //     $addFields: {
+  //       pd: {
+  //         $cond: {
+  //           if: {
+  //             $or: [
+  //               { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] }, // Test-level discount
+  //               { $gt: [{ $ifNull: ['$parcentDiscount', 0] }, 0] }, // Overall percent discount
+  //             ],
+  //           },
+  //           then: {
+  //             $cond: {
+  //               if: { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] }, // If test-level discount exists
+  //               then: {
+  //                 $divide: [
+  //                   {
+  //                     $multiply: [
+  //                       '$testDetails.price',
+  //                       { $ifNull: ['$tests.discount', 0] },
+  //                     ],
+  //                   },
+  //                   100,
+  //                 ],
+  //               },
+  //               else: {
+  //                 $divide: [
+  //                   {
+  //                     $multiply: [
+  //                       '$testDetails.price',
+  //                       { $ifNull: ['$parcentDiscount', 0] },
+  //                     ],
+  //                   },
+  //                   100,
+  //                 ],
+  //               },
+  //             },
+  //           },
+  //           else: 0, // No discount exists
+  //         },
+  //       },
+
+  //       // Cash Discount (cd) applied to the test price
+  //       cd: { $ifNull: ['$cashDiscount', 0] },
+
+  //       // Total Discount: Sum of cash discount (cd) and percent discount (pd)
+  //       // totalDiscount: {
+  //       //   $sum: [{ $ifNull: ['$pd', 0] }, { $ifNull: ['$cd', 0] }],
+  //       // },
+
+  //       vatAmount: {
+  //         $cond: {
+  //           if: { $gt: ['$vat', 0] }, // Check if VAT exists
+  //           then: {
+  //             $multiply: [
+  //               {
+  //                 $subtract: [
+  //                   '$totalPrice',
+  //                   {
+  //                     $add: [
+  //                       { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
+  //                       { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
+  //                     ],
+  //                   },
+  //                 ], // Net amount after discount
+  //               },
+  //               { $divide: ['$vat', 100] }, // Calculate VAT amount
+  //             ],
+  //           },
+  //           else: 0, // No VAT to add
+  //         },
+  //       },
+  //     },
+  //   },
+
+  //   {
+  //     $group: {
+  //       _id: {
+  //         oid: '$oid',
+  //         groupDate: {
+  //           $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+  //         },
+  //       },
+  //       totalPrice: { $first: '$totalPrice' },
+  //       totalTestPrice: { $sum: '$testDetails.price' },
+  //       totalDiscount: { $sum: '$totalDiscount' }, // Sum of all discounts
+  //       discountedPrice: { $first: '$discountedPrice' },
+  //       vat: { $first: '$vatAmount' }, // VAT in amount
+  //       finalPrice: { $first: '$finalPrice' }, // Total after adding VAT
+  //       dueAmount: { $first: '$dueAmount' },
+  //       paid: { $first: '$paid' },
+  //       uuid: { $first: '$uuid' },
+  //       records: {
+  //         $push: {
+  //           oid: '$oid',
+  //           uuid: '$uuid',
+  //           totalPrice: '$totalPrice',
+  //           totalTestPrice: { $sum: '$testDetails.price' },
+
+  //           vat: '$vatAmount',
+  //           finalPrice: '$finalPrice',
+  //           cashDiscount: '$cd',
+  //           parcentDiscountAmount: '$pd',
+
+  //           totalDis: {
+  //             $add: [
+  //               { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
+  //               { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
+  //             ],
+  //           },
+
+  //           totalAmount: {
+  //             $subtract: [
+  //               {
+  //                 $add: [
+  //                   { $toDouble: { $ifNull: ['$totalPrice', 0] } }, // Use totalPrice directly
+  //                   { $ifNull: ['$vatAmount', 0] }, // Ensure VAT is treated properly
+  //                 ],
+  //               },
+  //               {
+  //                 $add: [
+  //                   { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
+  //                   { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
+  //                 ],
+  //               },
+  //             ],
+  //           },
+
+  //           paid: '$paid',
+  //         },
+  //       },
+  //     },
+  //   },
+  //   {
+  //     $sort: { oid: -1 },
+  //   },
+  //   {
+  //     $group: {
+  //       _id: '$_id.groupDate',
+  //       records: {
+  //         $push: { $first: '$records' },
+  //       },
+  //     },
+  //   },
+  //   {
+  //     $project: {
+  //       _id: 0,
+  //       groupDate: '$_id',
+  //       records: 1,
+  //     },
+  //   },
+  // ];
   const query = [
     {
       $match: {
@@ -1106,12 +1286,13 @@ const getIncomeStatementFromDB = async (payload: {
           $gte: startDate,
           $lte: endDate,
         },
+        status:{$ne:"refunded"},
         remarks: { $in: [null, '', undefined] },
       },
     },
     {
       $unwind: {
-        path: '$tests', // Unwind the tests array from the order collection
+        path: '$tests',
         preserveNullAndEmptyArrays: true,
       },
     },
@@ -1135,13 +1316,13 @@ const getIncomeStatementFromDB = async (payload: {
           $cond: {
             if: {
               $or: [
-                { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] }, // Test-level discount
-                { $gt: [{ $ifNull: ['$parcentDiscount', 0] }, 0] }, // Overall percent discount
+                { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] },
+                { $gt: [{ $ifNull: ['$parcentDiscount', 0] }, 0] },
               ],
             },
             then: {
               $cond: {
-                if: { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] }, // If test-level discount exists
+                if: { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] },
                 then: {
                   $divide: [
                     {
@@ -1166,39 +1347,35 @@ const getIncomeStatementFromDB = async (payload: {
                 },
               },
             },
-            else: 0, // No discount exists
+            else: 0,
           },
         },
 
-        // Cash Discount (cd) applied to the test price
         cd: { $ifNull: ['$cashDiscount', 0] },
-
-        // Total Discount: Sum of cash discount (cd) and percent discount (pd)
-        // totalDiscount: {
-        //   $sum: [{ $ifNull: ['$pd', 0] }, { $ifNull: ['$cd', 0] }],
-        // },
 
         vatAmount: {
           $cond: {
-            if: { $gt: ['$vat', 0] }, // Check if VAT exists
+            if: { $gt: ['$vat', 0] },
             then: {
               $multiply: [
                 {
                   $subtract: [
-                    '$totalPrice',
+                    '$totalPrice', // DB থেকে আসা totalPrice
                     {
-                      $add: [
-                        { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
-                        { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
-                      ],
+                      $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
                     },
-                  ], // Net amount after discount
+                  ],
                 },
-                { $divide: ['$vat', 100] }, // Calculate VAT amount
+                { $divide: ['$vat', 100] },
               ],
             },
-            else: 0, // No VAT to add
+            else: 0,
           },
+        },
+
+        // 👉 নতুন ফিল্ড: vat সহ total
+        priceWithVat: {
+          $add: ['$totalPrice', { $ifNull: ['$vatAmount', 0] }],
         },
       },
     },
@@ -1211,12 +1388,12 @@ const getIncomeStatementFromDB = async (payload: {
             $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
           },
         },
-        totalPrice: { $first: '$totalPrice' },
+        totalPrice: { $first: '$totalPrice' }, // শুধু DB থেকে totalPrice
         totalTestPrice: { $sum: '$testDetails.price' },
-        totalDiscount: { $sum: '$totalDiscount' }, // Sum of all discounts
         discountedPrice: { $first: '$discountedPrice' },
-        vat: { $first: '$vatAmount' }, // VAT in amount
-        finalPrice: { $first: '$finalPrice' }, // Total after adding VAT
+        vat: { $first: '$vatAmount' },
+        priceWithVat: { $first: '$priceWithVat' }, // আলাদা করে রাখলাম
+        finalPrice: { $first: '$finalPrice' },
         dueAmount: { $first: '$dueAmount' },
         paid: { $first: '$paid' },
         uuid: { $first: '$uuid' },
@@ -1224,38 +1401,22 @@ const getIncomeStatementFromDB = async (payload: {
           $push: {
             oid: '$oid',
             uuid: '$uuid',
-            totalPrice: '$totalPrice',
-            totalTestPrice: { $sum: '$testDetails.price' },
-
+            totalPrice: '$totalPrice', // DB value
+            totalTestPrice: '$testDetails.price',
             vat: '$vatAmount',
+            priceWithVat: '$priceWithVat', // নতুন ফিল্ড
             finalPrice: '$finalPrice',
             cashDiscount: '$cd',
             parcentDiscountAmount: '$pd',
-
             totalDis: {
-              $add: [
-                { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
-                { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
-              ],
+              $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
             },
-
             totalAmount: {
               $subtract: [
-                {
-                  $add: [
-                    { $toDouble: { $ifNull: ['$totalPrice', 0] } }, // Use totalPrice directly
-                    { $ifNull: ['$vatAmount', 0] }, // Ensure VAT is treated properly
-                  ],
-                },
-                {
-                  $add: [
-                    { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
-                    { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
-                  ],
-                },
+                '$priceWithVat', // DB totalPrice + vat
+                { $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }] },
               ],
             },
-
             paid: '$paid',
           },
         },
@@ -1267,9 +1428,7 @@ const getIncomeStatementFromDB = async (payload: {
     {
       $group: {
         _id: '$_id.groupDate',
-        records: {
-          $push: { $first: '$records' },
-        },
+        records: { $push: { $first: '$records' } },
       },
     },
     {
