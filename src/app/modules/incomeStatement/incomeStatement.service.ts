@@ -364,35 +364,59 @@ const getDueCollectionStatementFromDB = async (query: Record<string, any>) => {
 
     // Project required fields
     {
-      // $project: {
-      //   _id: 1,
-      //   oid: 1,
-      //   totalPrice: 1,
-      //   cashDiscount: '$orderInfo.cashDiscount',
-      //   parcentDiscount: '$orderInfo.parcentDiscount',
-
-      //   paid: 1,
-      //   vat: 1,
-      //   refDoctor: { name: 1 }, // Include only the doctor's name
-
-      //   createdAt: 1,
-      // },
       $project: {
         oid: '$orderInfo.oid',
         totalPrice: '$orderInfo.totalPrice',
         cashDiscount: '$orderInfo.cashDiscount',
         parcentDiscount: '$orderInfo.parcentDiscount',
         totalDiscount: {
-          $add: ['$orderInfo.cashDiscount', '$orderInfo.parcentDiscount'],
+          $add: [
+            '$orderInfo.cashDiscount',
+            {
+              $divide: [
+                {
+                  $multiply: [
+                    '$orderInfo.totalPrice',
+                    '$orderInfo.parcentDiscount',
+                  ],
+                },
+                100,
+              ],
+            },
+          ],
         },
-
         amount: 1,
         totalPaid: '$orderInfo.paid',
         totalDue: '$orderInfo.dueAmount',
         totalAmount: '$totalAmount',
         patientData: '$orderInfo.patient',
         // testDetails: '$testDetails',
-        createdAt: '$createdAt',
+        createdAt: 1,
+      },
+    },
+
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+        },
+        records: { $push: '$$ROOT' },
+        groupTotalCollection: { $sum: '$amount' }, // optional aggregate sum
+        grouptotaDueCollection: { $sum: '$totalPaid' }, // optional sum
+        grouptotaDueAmount: { $sum: '$totalDue' }, // optional sum
+        grouptotaBill: { $sum: '$totalPrice' }, // optional sum
+        grouptotaDiscount: { $sum: '$totalDiscount' }, // optional sum
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        groupDate: { $push: '$$ROOT' },
+        grandTotalCollection: { $sum: '$groupTotalCollection' },
+        grandTotalDueCollection: { $sum: '$grouptotaDueCollection' },
+        grandTotalDueAmount: { $sum: '$grouptotaDueAmount' },
+        grandTotalBill: { $sum: '$grouptotaBill' },
+        grandTotalDiscount: { $sum: '$grouptotaDiscount' },
       },
     },
 
