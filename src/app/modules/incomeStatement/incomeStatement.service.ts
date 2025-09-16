@@ -308,8 +308,131 @@ const getLastTwentyEightDaysPaidAmountFromDB = async () => {
   }
 };
 
+//! Due Bill Collection Statement
+const getDueCollectionStatementFromDB = async (query: Record<string, any>) => {
+  const { oid } = query;
+
+  const fromDate = new Date(query.startDate);
+  const toDate = new Date(query.endDate);
+  fromDate.setUTCHours(0, 0, 0, 0);
+
+  toDate.setUTCHours(23, 59, 59, 999);
+  // Initialize the match stage with an empty filter
+  const match: Record<string, any> = {};
+
+  // Apply OID filter if provided
+  if (oid) {
+    match.oid = oid;
+  }
+
+  // Apply date range filter if provided
+
+  match.createdAt = {
+    $gte: fromDate,
+    $lte: toDate,
+  };
+  match.description = 'Collected due amount';
+
+  const result = await Transation.aggregate([
+    // Apply the match filter for oid, refBy, or date range
+    { $match: match },
+
+    {
+      $lookup: {
+        from: 'orders',
+        localField: 'ref',
+        foreignField: '_id',
+        as: 'orderInfo',
+      },
+    },
+
+    { $unwind: { path: '$orderInfo', preserveNullAndEmptyArrays: true } },
+
+    // Lookup the 'tests.test' field to populate test details
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'postedBy',
+        foreignField: 'uuid',
+        as: 'employeeDetails',
+      },
+    },
+
+    {
+      $unwind: { path: '$employeeDetails', preserveNullAndEmptyArrays: true },
+    },
+
+    // Project required fields
+    {
+      // $project: {
+      //   _id: 1,
+      //   oid: 1,
+      //   totalPrice: 1,
+      //   cashDiscount: '$orderInfo.cashDiscount',
+      //   parcentDiscount: '$orderInfo.parcentDiscount',
+
+      //   paid: 1,
+      //   vat: 1,
+      //   refDoctor: { name: 1 }, // Include only the doctor's name
+
+      //   createdAt: 1,
+      // },
+      $project: {
+        oid: '$orderInfo.oid',
+        totalPrice: '$orderInfo.totalPrice',
+        cashDiscount: '$orderInfo.cashDiscount',
+        parcentDiscount: '$orderInfo.parcentDiscount',
+        totalDiscount: {
+          $add: ['$orderInfo.cashDiscount', '$orderInfo.parcentDiscount'],
+        },
+
+        amount: 1,
+        totalPaid: '$orderInfo.paid',
+        totalDue: '$orderInfo.dueAmount',
+        totalAmount: '$totalAmount',
+        patientData: '$orderInfo.patient',
+        // testDetails: '$testDetails',
+        createdAt: '$createdAt',
+      },
+    },
+
+    {
+      $sort: { createdAt: -1 },
+    },
+    // Bill No,
+    // Patient Name,
+    // Total Bill,
+    // Total Discount,
+    // Previous Collection,
+    // Due Amount,
+    // Due Collection,
+    // Balance Due
+    // Group the results by refBy.name
+    // {
+    //   $group: {
+    //     _id: '$refDoctor.name', // Group by doctor name (refBy)
+    //     records: {
+    //       $push:
+    //     },
+    //   },
+    // },
+
+    // // Rename the _id field to refBy for clarity
+    // {
+    //   $project: {
+    //     _id: 0, // Exclude _id
+    //     refBy: '$_id', // Rename _id to refBy
+    //     records: 1, // Include the records array
+    //   },
+    // },
+  ]);
+
+  return result;
+};
+
 export const incomeStatementServices = {
   getEmployeeIncomeStatementFromDB,
   getEmployeeIncomeStatementSummeryFromDB,
   getLastTwentyEightDaysPaidAmountFromDB,
+  getDueCollectionStatementFromDB,
 };

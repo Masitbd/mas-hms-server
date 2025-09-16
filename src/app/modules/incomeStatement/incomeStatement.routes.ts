@@ -21,5 +21,9 @@ router.get(
   '/last-paid',
   incomeStatementControllers.getLastTwentyEightDaysPaidAmount
 );
+router.get(
+  '/due-collection-statement',
+  incomeStatementControllers.getDueCollectionStatement
+);
 
 export const incomeStatementRoutes = { router };
