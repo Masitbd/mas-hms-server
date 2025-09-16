@@ -145,6 +145,7 @@ const postJournalEntryForDoctorCommission = async ({
       },
     }
   );
+
   return result;
 };
 

@@ -7,6 +7,7 @@ import { Order } from '../order/order.model';
 import { ReportGroup } from '../reportGroup/reportGroup.model';
 import { ITest } from '../test/test.interfacs';
 import { TestReport } from '../testReport/testReport.model';
+import { splitReportByTestId, TestResult } from './report.helper';
 import { IReportForParameter } from './report.interface';
 import {
   DescriptionBasedReport,
@@ -14,7 +15,9 @@ import {
   ParameterBasedReport,
 } from './report.model';
 
-const post = async (params: IReportForParameter & { test?: string }) => {
+const post = async (
+  params: IReportForParameter & { test?: string; testIds?: string[] }
+) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -26,12 +29,9 @@ const post = async (params: IReportForParameter & { test?: string }) => {
         label: params.reportGroup.label,
       });
       if (order && reportGroup) {
-        const reportGroupId = reportGroup._id;
-
         if (reportGroup?.testResultType == ENUM_RESULT_TYPE.PARAMETER_BASED) {
           const tests = order.tests.map((test: any) => {
-            const rTest =
-              test.test?.reportGroup.toString() == reportGroupId.toString();
+            const rTest = params?.testIds?.includes(test.test?._id.toString());
             if (rTest && test.status !== ENUM_TEST_STATUS.REFUNDED) {
               test.status = 'completed';
             }
@@ -41,7 +41,8 @@ const post = async (params: IReportForParameter & { test?: string }) => {
           order.tests = tests as any;
         } else if (
           reportGroup?.testResultType == ENUM_RESULT_TYPE.DESCRIPTIVE ||
-          reportGroup.testResultType == ENUM_RESULT_TYPE.BACTERIAL
+          reportGroup.testResultType == ENUM_RESULT_TYPE.BACTERIAL ||
+          reportGroup?.testResultType == ENUM_RESULT_TYPE.PARAMETER_BASED
         ) {
           const tests = order.tests?.map((test: any) => {
             if (
@@ -63,7 +64,10 @@ const post = async (params: IReportForParameter & { test?: string }) => {
     switch (params.reportGroup.testResultType) {
       case 'parameter':
         await orderStatusChanger();
-        result = await ParameterBasedReport.create([params], { session });
+        result = await ParameterBasedReport.insertMany(
+          splitReportByTestId(params as unknown as TestResult),
+          { session }
+        );
         break;
 
       case 'descriptive':
@@ -89,18 +93,34 @@ const post = async (params: IReportForParameter & { test?: string }) => {
   }
 };
 
-const patch = async (params: IReportForParameter & { test: string }) => {
-  console.log(params);
+const patch = async (
+  params: IReportForParameter & { test: string; testIds: string[] }
+) => {
   if ('_id' in params) {
     delete params['_id'];
   }
   switch (params.reportGroup.testResultType) {
     case 'parameter':
-      return await ParameterBasedReport.updateOne({ oid: params.oid }, params);
+      return await params?.testIds?.map(async (id: string) => {
+        const data = {
+          ...params,
+          testResult: params?.testResult?.filter(
+            tr => tr?.testId?.toString() == id?.toString()
+          ),
+          testId: new Types.ObjectId(id),
+        };
+        await ParameterBasedReport.updateOne(
+          {
+            oid: params.oid,
+            testId: new Types.ObjectId(id),
+          },
+          data
+        );
+      });
 
     case 'descriptive':
       return await DescriptionBasedReport.updateOne(
-        { oid: params.oid, test: new Types.ObjectId(params.test) },
+        { oid: params.oid, test: new Types.ObjectId(params.testIds[0]) },
         params
       );
 
@@ -117,24 +137,39 @@ const patch = async (params: IReportForParameter & { test: string }) => {
 
 const fetchSingle = async (
   oid: string,
-  params: { reportGroup: string; resultType: string; test: string }
+  params: {
+    reportGroup: string;
+    resultType: string;
+    test: string;
+    testIds: string;
+  }
 ) => {
   const { reportGroup, resultType } = params;
   if (!reportGroup || !resultType) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Invalid report group');
   }
 
+  const queryForParameterBasedReport = async () => {
+    const result = await ParameterBasedReport.find({
+      oid: oid,
+      testId: {
+        $in: params?.testIds?.split("'").map(id => new Types.ObjectId(id)),
+      },
+    });
+
+    return result;
+  };
+
   switch (resultType) {
     case 'parameter':
-      return await ParameterBasedReport.find({
-        oid: oid,
-        'reportGroup.label': reportGroup,
-      });
+      return await queryForParameterBasedReport();
 
     case 'descriptive':
       return await DescriptionBasedReport.find({
         oid: oid,
-        test: new Types.ObjectId(params?.test),
+        test: {
+          $in: params?.testIds?.split("'").map(id => new Types.ObjectId(id)),
+        },
       });
 
     case 'bacterial':
