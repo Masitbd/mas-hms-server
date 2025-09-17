@@ -116,9 +116,14 @@ const fetchAllReportType = async (props: Partial<fetchAllreportTypeProps>) => {
   return result;
 };
 
+const removeReportType = async (id: string) => {
+  return await ReportType.findOneAndDelete({ _id: new Types.ObjectId(id) });
+};
+
 export const ReportTypeService = {
   postReportType,
   patchReportType,
   fetchSingleReportType,
   fetchAllReportType,
+  removeReportType,
 };

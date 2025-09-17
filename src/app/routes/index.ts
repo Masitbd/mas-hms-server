@@ -17,6 +17,7 @@ import { OrderRoutes } from '../modules/order/order.routes';
 import { PatientRoute } from '../modules/patient/patient.route';
 import { PdrvRoutes } from '../modules/pdrv/pdrv.routes';
 import { RefundRoutes } from '../modules/refund/refund.routes';
+import { ReportMarginsRoutes } from '../modules/report-margin/reportMargin.route';
 import { ReportGroupRoutes } from '../modules/reportGroup/reportGroup.routes';
 import { reportTypeRoutes } from '../modules/reportType/reportType.routes';
 import { ReportTypeGroupRoutes } from '../modules/reportTypeGroup/reportTypeGroup.routes';
@@ -138,6 +139,10 @@ const moduleRoutes = [
   {
     path: '/company-info',
     route: CompanyInfoRoutes.routes,
+  },
+  {
+    path: '/report-margin',
+    route: ReportMarginsRoutes.routes,
   },
 ];
 

@@ -14,7 +14,7 @@ export type IReport = {
   specimen?: string[];
   conductedBy: string;
   reportGroup: IReportGroup;
-  testId: string;
+  testId: Types.ObjectId;
 };
 
 export type IReportForParameter = {

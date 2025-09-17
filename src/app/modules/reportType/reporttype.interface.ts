@@ -6,6 +6,7 @@ export type ITestForParameter = {
   normalValue: string;
   unit: string;
   defaultValue: string[];
+  testId: Types.ObjectId;
 };
 
 export type ITestForDescriptive = {

@@ -24,4 +24,9 @@ routes.get(
   ReportTypeController.getAllReportType
 );
 
+routes.delete(
+  '/:id',
+  auth(ENUM_USER_PEMISSION.USER),
+  ReportTypeController.removeReportType
+);
 export const reportTypeRoutes = { routes };
