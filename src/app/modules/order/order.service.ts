@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-unused-vars */
-import { createCanvas } from 'canvas';
 import httpStatus from 'http-status';
 import JsBarcode from 'jsbarcode';
 import mongoose, { PipelineStage, Types } from 'mongoose';
@@ -35,6 +34,7 @@ import {
   orderAggregationPipeline,
   totalPriceCalculator,
 } from './order.utils';
+import { createCanvas } from 'canvas';
 
 const postOrder = async (params: IOrder) => {
   const newOid = await orderIdGenerator().then(id => id);
@@ -1128,12 +1128,13 @@ const getIncomeStatementFromDB = async (payload: {
           $gte: startDate,
           $lte: endDate,
         },
+        status: { $ne: 'refunded' },
         remarks: { $in: [null, '', undefined] },
       },
     },
     {
       $unwind: {
-        path: '$tests', // Unwind the tests array from the order collection
+        path: '$tests',
         preserveNullAndEmptyArrays: true,
       },
     },
@@ -1163,13 +1164,13 @@ const getIncomeStatementFromDB = async (payload: {
           $cond: {
             if: {
               $or: [
-                { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] }, // Test-level discount
-                { $gt: [{ $ifNull: ['$parcentDiscount', 0] }, 0] }, // Overall percent discount
+                { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] },
+                { $gt: [{ $ifNull: ['$parcentDiscount', 0] }, 0] },
               ],
             },
             then: {
               $cond: {
-                if: { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] }, // If test-level discount exists
+                if: { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] },
                 then: {
                   $divide: [
                     {
@@ -1194,36 +1195,36 @@ const getIncomeStatementFromDB = async (payload: {
                 },
               },
             },
-            else: 0, // No discount exists
+            else: 0,
           },
         },
 
-        // Cash Discount (cd) applied to the test price
         cd: { $ifNull: ['$cashDiscount', 0] },
 
-        // Total Discount: Sum of cash discount (cd) and percent discount (pd)
 
         vatAmount: {
           $cond: {
-            if: { $gt: ['$vat', 0] }, // Check if VAT exists
+            if: { $gt: ['$vat', 0] },
             then: {
               $multiply: [
                 {
                   $subtract: [
-                    '$totalPrice',
+                    '$totalPrice', // DB থেকে আসা totalPrice
                     {
-                      $add: [
-                        { $ifNull: ['$cd', 0] }, // Ensure cashDiscount is treated properly
-                        { $ifNull: ['$pd', 0] }, // Ensure parcentDiscountAmount is treated properly
-                      ],
+                      $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
                     },
-                  ], // Net amount after discount
+                  ],
                 },
-                { $divide: ['$vat', 100] }, // Calculate VAT amount
+                { $divide: ['$vat', 100] },
               ],
             },
-            else: 0, // No VAT to add
+            else: 0,
           },
+        },
+
+        // 👉 নতুন ফিল্ড: vat সহ total
+        priceWithVat: {
+          $add: ['$totalPrice', { $ifNull: ['$vatAmount', 0] }],
         },
       },
     },
@@ -1235,28 +1236,42 @@ const getIncomeStatementFromDB = async (payload: {
             $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
           },
         },
-        totalPrice: { $first: '$totalPrice' },
+        totalPrice: { $first: '$totalPrice' }, // শুধু DB থেকে totalPrice
         totalTestPrice: { $sum: '$testDetails.price' },
+
         totalDiscount: { $first: '$totalDiscount' }, // Sum of all discounts
+
         discountedPrice: { $first: '$discountedPrice' },
-        vat: { $first: '$vatAmount' }, // VAT in amount
-        finalPrice: { $first: '$finalPrice' }, // Total after adding VAT
+        vat: { $first: '$vatAmount' },
+        priceWithVat: { $first: '$priceWithVat' }, // আলাদা করে রাখলাম
+        finalPrice: { $first: '$finalPrice' },
         dueAmount: { $first: '$dueAmount' },
         paid: { $first: '$paid' },
         uuid: { $first: '$uuid' },
-        oid: { $first: '$oid' },
-        cashDiscount: { $first: '$cd' },
-        parcentDiscountAmount: { $sum: '$pd' },
-        totalAmount: { $first: '$netPayable' },
-      },
-    },
-    {
-      $addFields: {
-        totalDiscount: {
-          $add: [{ $ifNull: ['$pd', 0] }, { $ifNull: ['$cashDiscount', 0] }],
-        },
-        totalDis: {
-          $add: [{ $ifNull: ['$pd', 0] }, { $ifNull: ['$cashDiscount', 0] }],
+
+        records: {
+          $push: {
+            oid: '$oid',
+            uuid: '$uuid',
+            totalPrice: '$totalPrice', // DB value
+            totalTestPrice: '$testDetails.price',
+            vat: '$vatAmount',
+            priceWithVat: '$priceWithVat', // নতুন ফিল্ড
+            finalPrice: '$finalPrice',
+            cashDiscount: '$cd',
+            parcentDiscountAmount: '$pd',
+            totalDis: {
+              $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
+            },
+            totalAmount: {
+              $subtract: [
+                '$priceWithVat', // DB totalPrice + vat
+                { $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }] },
+              ],
+            },
+            paid: '$paid',
+          },
+
         },
       },
     },
@@ -1267,9 +1282,9 @@ const getIncomeStatementFromDB = async (payload: {
     {
       $group: {
         _id: '$_id.groupDate',
-        records: {
-          $push: '$$ROOT',
-        },
+
+        records: { $push: { $first: '$records' } },
+
       },
     },
     {
@@ -1318,6 +1333,8 @@ const getDueBillsDetailFromDB = async (query: Record<string, any>) => {
       $lte: toDate,
     };
   }
+
+  match.dueAmount = {$gt:0}
   match.remarks = { $in: [null, '', undefined] };
 
   const result = await Order.aggregate([

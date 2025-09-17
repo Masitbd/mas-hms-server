@@ -43,11 +43,23 @@ const getLastTwentyEightDaysPaidAmount = catchAsync(async (req, res) => {
     data: result,
   });
 });
+const getDueCollectionStatement = catchAsync(async (req, res) => {
+  const result = await incomeStatementServices.getDueCollectionStatementFromDB(
+    req.query
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Retrived due collection statement Successfully',
+    success: true,
+    data: result,
+  });
+});
 
 // export
 
 export const incomeStatementControllers = {
   getEmployeeIncomeStatementSummery,
   getEmployeeIncomeStatement,
-  getLastTwentyEightDaysPaidAmount
+  getLastTwentyEightDaysPaidAmount,
+  getDueCollectionStatement,
 };

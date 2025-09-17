@@ -35,7 +35,7 @@ const getEmployeeIncomeStatementFromDB = async (
     },
     {
       $unwind: {
-        path: '$userDetails', // Unwind the user details array
+        path: '$userDetails',
         preserveNullAndEmptyArrays: true,
       },
     },
@@ -45,44 +45,56 @@ const getEmployeeIncomeStatementFromDB = async (
           groupDate: {
             $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
           },
-          postedBy: '$postedBy', // Group by user ID (postedBy)
-          name: '$userDetails.name', // Include user name in the group
+          postedBy: '$postedBy',
+          name: '$userDetails.name',
         },
-        totalPaid: { $sum: '$paid' }, // Sum total paid amount for each
+        totalPaid: { $sum: '$paid' },
         records: {
           $push: {
             oid: '$oid',
             uuid: '$uuid',
+            name: '$patient.name',
             amount: '$paid',
-            totalPaid: { $sum: '$paid' },
             date: '$createdAt',
           },
         },
       },
     },
     {
-      $sort: { '_id.groupDate': -1 }, // Sort by group date
+      $sort: { '_id.groupDate': -1 },
     },
     {
       $group: {
-        _id: '$_id.groupDate', // Group by date
+        _id: '$_id.groupDate',
         users: {
           $push: {
-            postedBy: '$_id.name',
-            totalPaid: { $sum: '$paid' }, // Include total paid amount for each user
-            paid: '$paid',
-            totalPrice: '$totalPrice',
-            vat: '$vat',
+            postedBy: '$_id.postedBy',
+            name: '$_id.name',
+            totalPaid: '$totalPaid',
             records: '$records',
           },
         },
+        dayTotal: { $sum: '$totalPaid' },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        data: {
+          $push: {
+            groupDate: '$_id',
+            users: '$users',
+            dayTotal: '$dayTotal',
+          },
+        },
+        grandTotal: { $sum: '$dayTotal' },
       },
     },
     {
       $project: {
         _id: 0,
-        groupDate: '$_id',
-        users: 1,
+        records: '$data',
+        grandTotal: 1,
       },
     },
   ];
@@ -296,8 +308,155 @@ const getLastTwentyEightDaysPaidAmountFromDB = async () => {
   }
 };
 
+//! Due Bill Collection Statement
+const getDueCollectionStatementFromDB = async (query: Record<string, any>) => {
+  const { oid } = query;
+
+  const fromDate = new Date(query.startDate);
+  const toDate = new Date(query.endDate);
+  fromDate.setUTCHours(0, 0, 0, 0);
+
+  toDate.setUTCHours(23, 59, 59, 999);
+  // Initialize the match stage with an empty filter
+  const match: Record<string, any> = {};
+
+  // Apply OID filter if provided
+  if (oid) {
+    match.oid = oid;
+  }
+
+  // Apply date range filter if provided
+
+  match.createdAt = {
+    $gte: fromDate,
+    $lte: toDate,
+  };
+  match.description = 'Collected due amount';
+
+  const result = await Transation.aggregate([
+    // Apply the match filter for oid, refBy, or date range
+    { $match: match },
+
+    {
+      $lookup: {
+        from: 'orders',
+        localField: 'ref',
+        foreignField: '_id',
+        as: 'orderInfo',
+      },
+    },
+
+    { $unwind: { path: '$orderInfo', preserveNullAndEmptyArrays: true } },
+
+    // Lookup the 'tests.test' field to populate test details
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'postedBy',
+        foreignField: 'uuid',
+        as: 'employeeDetails',
+      },
+    },
+
+    {
+      $unwind: { path: '$employeeDetails', preserveNullAndEmptyArrays: true },
+    },
+
+    // Project required fields
+    {
+      $project: {
+        oid: '$orderInfo.oid',
+        totalPrice: '$orderInfo.totalPrice',
+        cashDiscount: '$orderInfo.cashDiscount',
+        parcentDiscount: '$orderInfo.parcentDiscount',
+        totalDiscount: {
+          $add: [
+            '$orderInfo.cashDiscount',
+            {
+              $divide: [
+                {
+                  $multiply: [
+                    '$orderInfo.totalPrice',
+                    '$orderInfo.parcentDiscount',
+                  ],
+                },
+                100,
+              ],
+            },
+          ],
+        },
+        amount: 1,
+        totalPaid: '$orderInfo.paid',
+        totalDue: '$orderInfo.dueAmount',
+        totalAmount: '$totalAmount',
+        patientData: '$orderInfo.patient',
+        // testDetails: '$testDetails',
+        createdAt: 1,
+      },
+    },
+
+    {
+      $group: {
+        _id: {
+          $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+        },
+        records: { $push: '$$ROOT' },
+        groupTotalCollection: { $sum: '$amount' }, // optional aggregate sum
+        grouptotaDueCollection: { $sum: '$totalPaid' }, // optional sum
+        grouptotaDueAmount: { $sum: '$totalDue' }, // optional sum
+        grouptotaBill: { $sum: '$totalPrice' }, // optional sum
+        grouptotaDiscount: { $sum: '$totalDiscount' }, // optional sum
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        groupDate: { $push: '$$ROOT' },
+        grandTotalCollection: { $sum: '$groupTotalCollection' },
+        grandTotalDueCollection: { $sum: '$grouptotaDueCollection' },
+        grandTotalDueAmount: { $sum: '$grouptotaDueAmount' },
+        grandTotalBill: { $sum: '$grouptotaBill' },
+        grandTotalDiscount: { $sum: '$grouptotaDiscount' },
+      },
+    },
+
+    {
+      $sort: { createdAt: -1 },
+    },
+    // Bill No,
+    // Patient Name,
+    // Total Bill,
+    // Total Discount,
+    // Previous Collection,
+    // Due Amount,
+    // Due Collection,
+    // Balance Due
+    // Group the results by refBy.name
+    // {
+    //   $group: {
+    //     _id: '$refDoctor.name', // Group by doctor name (refBy)
+    //     records: {
+    //       $push:
+    //     },
+    //   },
+    // },
+
+    // // Rename the _id field to refBy for clarity
+    // {
+    //   $project: {
+    //     _id: 0, // Exclude _id
+    //     refBy: '$_id', // Rename _id to refBy
+    //     records: 1, // Include the records array
+    //   },
+    // },
+  ]);
+
+  return result;
+};
+
 export const incomeStatementServices = {
   getEmployeeIncomeStatementFromDB,
   getEmployeeIncomeStatementSummeryFromDB,
   getLastTwentyEightDaysPaidAmountFromDB,
+  getDueCollectionStatementFromDB,
 };
