@@ -32,7 +32,7 @@ const orderSchema = new Schema<IOrder>(
       type: Schema.Types.ObjectId,
       ref: 'doctor',
     },
-    consultant: { type: Schema.Types.ObjectId, ref: 'doctor' },
+    consultant: { type: Schema.Types.ObjectId, ref: 'doctor', required: true },
     oid: { type: String, unique: true },
     patientType: { type: String, required: true },
     discountedBy: { type: String, default: 'system' },
