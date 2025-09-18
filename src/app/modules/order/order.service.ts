@@ -1,5 +1,7 @@
+/* eslint-disable no-unused-expressions */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-unused-vars */
+import { createCanvas } from 'canvas';
 import httpStatus from 'http-status';
 import JsBarcode from 'jsbarcode';
 import mongoose, { PipelineStage, Types } from 'mongoose';
@@ -34,7 +36,6 @@ import {
   orderAggregationPipeline,
   totalPriceCalculator,
 } from './order.utils';
-import { createCanvas } from 'canvas';
 
 const postOrder = async (params: IOrder) => {
   const newOid = await orderIdGenerator().then(id => id);
@@ -275,6 +276,20 @@ const orderPatch = async (param: {
           (data?.cashDiscount ?? 0) -
           (data?.paid ?? 0) +
           vat;
+
+    // Setting test status
+
+    data?.tests?.map(t => {
+      const oldTest = doesExists?.tests?.find(
+        T => T?.test?.toString() == t?.test?.toString()
+      );
+
+      t.status = oldTest?.status ? oldTest?.status : 'pending';
+
+      return t;
+    });
+
+    console.log(data);
 
     const result = await Order.findOneAndUpdate({ _id: param.id }, data, {
       new: true,
@@ -1201,7 +1216,6 @@ const getIncomeStatementFromDB = async (payload: {
 
         cd: { $ifNull: ['$cashDiscount', 0] },
 
-
         vatAmount: {
           $cond: {
             if: { $gt: ['$vat', 0] },
@@ -1271,7 +1285,6 @@ const getIncomeStatementFromDB = async (payload: {
             },
             paid: '$paid',
           },
-
         },
       },
     },
@@ -1284,7 +1297,6 @@ const getIncomeStatementFromDB = async (payload: {
         _id: '$_id.groupDate',
 
         records: { $push: { $first: '$records' } },
-
       },
     },
     {
@@ -1334,7 +1346,7 @@ const getDueBillsDetailFromDB = async (query: Record<string, any>) => {
     };
   }
 
-  match.dueAmount = {$gt:0}
+  match.dueAmount = { $gt: 0 };
   match.remarks = { $in: [null, '', undefined] };
 
   const result = await Order.aggregate([
