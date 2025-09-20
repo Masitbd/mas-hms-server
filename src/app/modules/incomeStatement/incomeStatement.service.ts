@@ -385,9 +385,17 @@ const getDueCollectionStatementFromDB = async (query: Record<string, any>) => {
             },
           ],
         },
+        // <div className="py-1 ps-1">
+        //         {dueBill?.totalPaid - dueBill.amount}
+        //       </div>
+        //       <div className="py-1 ps-1">
+        //         {dueBill?.totalDue + dueBill?.amount}
+        //       </div>
         amount: 1,
-        totalPaid: '$orderInfo.paid',
-        totalDue: '$orderInfo.dueAmount',
+        totalPaid: { $subtract: ['$orderInfo.paid', '$amount'] },
+
+        totalDue: { $add: ['$orderInfo.dueAmount', '$amount'] },
+        dueAmount: '$orderInfo.dueAmount',
         totalAmount: '$totalAmount',
         patientData: '$orderInfo.patient',
         // testDetails: '$testDetails',
@@ -404,6 +412,7 @@ const getDueCollectionStatementFromDB = async (query: Record<string, any>) => {
         groupTotalCollection: { $sum: '$amount' }, // optional aggregate sum
         grouptotaDueCollection: { $sum: '$totalPaid' }, // optional sum
         grouptotaDueAmount: { $sum: '$totalDue' }, // optional sum
+        groupDueAmount: { $sum: '$dueAmount' }, // optional sum
         grouptotaBill: { $sum: '$totalPrice' }, // optional sum
         grouptotaDiscount: { $sum: '$totalDiscount' }, // optional sum
       },
@@ -415,6 +424,7 @@ const getDueCollectionStatementFromDB = async (query: Record<string, any>) => {
         grandTotalCollection: { $sum: '$groupTotalCollection' },
         grandTotalDueCollection: { $sum: '$grouptotaDueCollection' },
         grandTotalDueAmount: { $sum: '$grouptotaDueAmount' },
+        grandDueAmount: { $sum: '$groupDueAmount' },
         grandTotalBill: { $sum: '$grouptotaBill' },
         grandTotalDiscount: { $sum: '$grouptotaDiscount' },
       },

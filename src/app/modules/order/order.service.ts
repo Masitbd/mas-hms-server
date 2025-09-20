@@ -35,7 +35,7 @@ import {
   orderAggregationPipeline,
   totalPriceCalculator,
 } from './order.utils';
-import { createCanvas } from 'canvas';
+// import { createCanvas } from 'canvas';
 
 const postOrder = async (params: IOrder) => {
   const newOid = await orderIdGenerator().then(id => id);
