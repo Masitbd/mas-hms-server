@@ -1106,20 +1106,38 @@ const getIncomeStatementFromDB = async (payload: {
           $gte: startDate,
           $lte: endDate,
         },
-        status: { $ne: 'refunded' },
+        // transactionType: { $ne: 'debit' },
+        description: { $eq: 'Payment for order' },
         remarks: { $in: [null, '', undefined] },
+      },
+    },
+    // rook up order info
+    {
+      $lookup: {
+        from: 'orders',
+        localField: 'ref',
+        foreignField: '_id',
+        as: 'orderInfo',
       },
     },
     {
       $unwind: {
-        path: '$tests',
+        path: '$orderInfo',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    //
+
+    {
+      $unwind: {
+        path: '$orderInfo.tests',
         preserveNullAndEmptyArrays: true,
       },
     },
     {
       $lookup: {
         from: 'tests',
-        localField: 'tests.test',
+        localField: 'orderInfo.tests.test',
         foreignField: '_id',
         as: 'testDetails',
       },
@@ -1136,19 +1154,19 @@ const getIncomeStatementFromDB = async (payload: {
           $cond: {
             if: {
               $or: [
-                { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] },
-                { $gt: [{ $ifNull: ['$parcentDiscount', 0] }, 0] },
+                { $gt: [{ $ifNull: ['$orderInfo.tests.discount', 0] }, 0] },
+                { $gt: [{ $ifNull: ['$orderInfo.parcentDiscount', 0] }, 0] },
               ],
             },
             then: {
               $cond: {
-                if: { $gt: [{ $ifNull: ['$tests.discount', 0] }, 0] },
+                if: { $gt: [{ $ifNull: ['$orderInfo.tests.discount', 0] }, 0] },
                 then: {
                   $divide: [
                     {
                       $multiply: [
                         '$testDetails.price',
-                        { $ifNull: ['$tests.discount', 0] },
+                        { $ifNull: ['$orderInfo.tests.discount', 0] },
                       ],
                     },
                     100,
@@ -1158,8 +1176,8 @@ const getIncomeStatementFromDB = async (payload: {
                   $divide: [
                     {
                       $multiply: [
-                        '$testDetails.price',
-                        { $ifNull: ['$parcentDiscount', 0] },
+                        '$orderInfo.totalPrice',
+                        { $ifNull: ['$orderInfo.parcentDiscount', 0] },
                       ],
                     },
                     100,
@@ -1171,22 +1189,22 @@ const getIncomeStatementFromDB = async (payload: {
           },
         },
 
-        cd: { $ifNull: ['$cashDiscount', 0] },
+        cd: { $ifNull: ['$orderInfo.cashDiscount', 0] },
 
         vatAmount: {
           $cond: {
-            if: { $gt: ['$vat', 0] },
+            if: { $gt: ['$orderInfo.vat', 0] },
             then: {
               $multiply: [
                 {
                   $subtract: [
-                    '$totalPrice', // DB থেকে আসা totalPrice
+                    '$orderInfo.totalPrice', // DB থেকে আসা totalPrice
                     {
                       $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
                     },
                   ],
                 },
-                { $divide: ['$vat', 100] },
+                { $divide: ['$orderInfo.vat', 100] },
               ],
             },
             else: 0,
@@ -1195,7 +1213,7 @@ const getIncomeStatementFromDB = async (payload: {
 
         // 👉 নতুন ফিল্ড: vat সহ total
         priceWithVat: {
-          $add: ['$totalPrice', { $ifNull: ['$vatAmount', 0] }],
+          $add: ['$orderInfo.totalPrice', { $ifNull: ['$vatAmount', 0] }],
         },
       },
     },
@@ -1203,13 +1221,14 @@ const getIncomeStatementFromDB = async (payload: {
     {
       $group: {
         _id: {
-          oid: '$oid',
+          oid: '$orderInfo.oid',
           groupDate: {
             $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
           },
         },
-        totalPrice: { $first: '$totalPrice' }, // শুধু DB থেকে totalPrice
+        totalPrice: { $first: '$orderInfo.totalPrice' }, // শুধু DB থেকে totalPrice
         totalTestPrice: { $sum: '$testDetails.price' },
+        testDetails: { $push: '$testDetails' },
         discountedPrice: { $first: '$discountedPrice' },
         vat: { $first: '$vatAmount' },
         priceWithVat: { $first: '$priceWithVat' }, // আলাদা করে রাখলাম
@@ -1219,10 +1238,10 @@ const getIncomeStatementFromDB = async (payload: {
         uuid: { $first: '$uuid' },
         records: {
           $push: {
-            oid: '$oid',
-            uuid: '$uuid',
-            totalPrice: '$totalPrice', // DB value
-            totalTestPrice: '$testDetails.price',
+            oid: '$orderInfo.oid',
+            uuid: '$orderInfo.uuid',
+            totalPrice: '$orderInfo.totalPrice', // DB value
+            // totalTestPrice: '$totalTestPrice',
             vat: '$vatAmount',
             priceWithVat: '$priceWithVat', // নতুন ফিল্ড
             finalPrice: '$finalPrice',
@@ -1237,11 +1256,19 @@ const getIncomeStatementFromDB = async (payload: {
                 { $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }] },
               ],
             },
-            paid: '$paid',
+            paid: '$amount',
           },
         },
       },
     },
+    // {
+    //   $addFields: {
+    //     'records.totalTestPrice': '$totalTestPrice',
+    //   },
+    // },
+
+    { $addFields: { 'records.totalTestPrice': '$totalTestPrice' } },
+
     {
       $sort: { oid: -1 },
     },
@@ -1260,7 +1287,7 @@ const getIncomeStatementFromDB = async (payload: {
     },
   ];
 
-  const result = await Order.aggregate(query as PipelineStage[]);
+  const result = await Transation.aggregate(query as PipelineStage[]);
   return result;
 };
 
@@ -1296,7 +1323,7 @@ const getDueBillsDetailFromDB = async (query: Record<string, any>) => {
     };
   }
 
-  match.dueAmount = {$gt:0}
+  match.dueAmount = { $gt: 0 };
   match.remarks = { $in: [null, '', undefined] };
 
   const result = await Order.aggregate([
