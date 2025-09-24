@@ -289,11 +289,10 @@ const orderPatch = async (param: {
       return t;
     });
 
-    console.log(data);
-
-    const result = await Order.findOneAndUpdate({ _id: param.id }, data, {
-      new: true,
-    }).session(session);
+    const result = await Order.findOneAndUpdate(
+      { _id: param.id },
+      data
+    ).session(session);
 
     // For Journal entry
     const oldNetPayable = doesExists.netPayable;
