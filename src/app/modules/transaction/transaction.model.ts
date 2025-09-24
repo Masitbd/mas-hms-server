@@ -16,7 +16,7 @@ const transactionSchema = new Schema<ITransaction>(
       required: true,
       enum: ['debit', 'credit', 'refund'],
     },
-    
+    refundAmount: { type: Number, default: 0 },
     ref: {
       type: Schema.Types.ObjectId,
     },

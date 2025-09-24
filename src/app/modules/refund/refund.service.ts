@@ -6,6 +6,7 @@ import { Order } from '../order/order.model';
 
 import { ENUM_TEST_STATUS } from '../../../enums/testStatusEnum';
 import { ITestsFromOrder } from '../order/order.interface';
+import { Transation } from '../transaction/transaction.model';
 import { VacuumTube } from '../vacuumTube/vacuumTube.models';
 import { Refund } from './refund.model';
 
@@ -168,11 +169,12 @@ const post = async (params: {
     // Save the order using session
     await order.save({ session });
 
-    await Order.findOneAndUpdate(
-      { oid: params.oid },
+    await Transation.findOneAndUpdate(
+      { ref: doesOrderExist._id, description: 'Payment for order' },
       {
-        refundAmount:
-          (order.refundAmount || 0) + (netPriceOfTest + refundedTubePrice),
+        $inc: {
+          refundAmount: netPriceOfTest + refundedTubePrice,
+        },
       },
       { session }
     );

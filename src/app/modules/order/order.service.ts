@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-unused-vars */
+import { createCanvas } from 'canvas';
 import httpStatus from 'http-status';
 import JsBarcode from 'jsbarcode';
 import mongoose, { PipelineStage, Types } from 'mongoose';
@@ -35,7 +36,6 @@ import {
   orderAggregationPipeline,
   totalPriceCalculator,
 } from './order.utils';
-import { createCanvas } from 'canvas';
 
 const postOrder = async (params: IOrder) => {
   const newOid = await orderIdGenerator().then(id => id);
@@ -1106,7 +1106,7 @@ const getIncomeStatementFromDB = async (payload: {
           $gte: startDate,
           $lte: endDate,
         },
-        // transactionType: { $ne: 'debit' },
+
         description: { $eq: 'Payment for order' },
         remarks: { $in: [null, '', undefined] },
       },
@@ -1256,7 +1256,7 @@ const getIncomeStatementFromDB = async (payload: {
                 { $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }] },
               ],
             },
-            paid: '$amount',
+            paid: { $subtract: ['$amount', '$refundAmount'] },
           },
         },
       },
