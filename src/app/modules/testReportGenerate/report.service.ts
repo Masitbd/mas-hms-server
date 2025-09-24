@@ -60,6 +60,11 @@ const post = async (
       }
     };
 
+    console.log('params', params);
+    console.log(
+      'mainData',
+      splitReportByTestId(params as unknown as TestResult)
+    );
     let result;
     switch (params.reportGroup.testResultType) {
       case 'parameter':
@@ -101,22 +106,24 @@ const patch = async (
   }
   switch (params.reportGroup.testResultType) {
     case 'parameter':
-      return await params?.testIds?.map(async (id: string) => {
-        const data = {
-          ...params,
-          testResult: params?.testResult?.filter(
-            tr => tr?.testId?.toString() == id?.toString()
-          ),
-          testId: new Types.ObjectId(id),
-        };
-        await ParameterBasedReport.updateOne(
-          {
-            oid: params.oid,
+      return await Promise.all(
+        params?.testIds?.map(async (id: string) => {
+          const data = {
+            ...params,
+            testResult: params?.testResult?.filter(
+              tr => tr?.testId?.toString() == id?.toString()
+            ),
             testId: new Types.ObjectId(id),
-          },
-          data
-        );
-      });
+          };
+          await ParameterBasedReport.updateOne(
+            {
+              oid: params.oid,
+              testId: new Types.ObjectId(id),
+            },
+            data
+          );
+        })
+      );
 
     case 'descriptive':
       return await DescriptionBasedReport.updateOne(
