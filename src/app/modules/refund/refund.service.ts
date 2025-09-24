@@ -168,6 +168,15 @@ const post = async (params: {
     // Save the order using session
     await order.save({ session });
 
+    await Order.findOneAndUpdate(
+      { oid: params.oid },
+      {
+        refundAmount:
+          (order.refundAmount || 0) + (netPriceOfTest + refundedTubePrice),
+      },
+      { session }
+    );
+
     // Commit the transaction
     await session.commitTransaction();
   } catch (error) {

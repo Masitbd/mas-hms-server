@@ -26,6 +26,7 @@ const orderSchema = new Schema<IOrder>(
     status: { type: String, required: true },
     dueAmount: { type: Number, required: true },
     paid: { type: Number, required: true },
+    refundAmount: { type: Number, default: 0 },
     vat: { type: Number },
     remarks: { type: String },
     refBy: {
