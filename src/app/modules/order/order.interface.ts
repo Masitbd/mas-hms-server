@@ -24,6 +24,7 @@ export type IOrder = {
   status: string;
   remarks: string;
   dueAmount: number;
+  
   refBy?: Types.ObjectId;
   patientType: string;
   paid: number;

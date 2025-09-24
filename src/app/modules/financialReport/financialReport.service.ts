@@ -99,10 +99,19 @@ const refByWIseIncomeStatement = async (params: { from: Date; to: Date }) => {
 };
 
 const getEmployeeLedger = async (params: { from: Date; to: Date }) => {
+  const { from, to } = params;
+  const startDate = new Date(from);
+  const endDate = new Date(to);
+  startDate.setUTCHours(0, 0, 0, 0);
+
+  endDate.setUTCHours(23, 59, 59, 999);
+
   const dewBillSummery = await Transation.aggregate(
-    dewCollectionSummeryPipeline(params)
+    dewCollectionSummeryPipeline({ from: startDate, to: endDate })
   );
-  const newBillSummery = await Order.aggregate(newBillSummeryPipeline(params));
+  const newBillSummery = await Order.aggregate(
+    newBillSummeryPipeline({ from: startDate, to: endDate })
+  );
   const result = {
     dewBills: dewBillSummery,
     newBills: newBillSummery,

@@ -5,6 +5,7 @@ export type ITransaction = {
   ref?: Types.ObjectId | null;
   description: string;
   transactionType: string;
+  refundAmount?: number;
   uuid?: string;
   createdAt?: Date;
   postedBy: string;
