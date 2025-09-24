@@ -145,10 +145,146 @@ const postJournalEntryForDoctorCommission = async ({
       },
     }
   );
+
   return result;
+};
+
+const postJournalEntryForPatch = async ({
+  newDueAmount,
+  newPaidAmount,
+  oldDueAmount,
+  oldNetPayable,
+  oldPaidAmount,
+  newNetPayable,
+  token,
+}: {
+  newNetPayable: number;
+  oldNetPayable: number;
+  oldDueAmount: number;
+  newDueAmount: number;
+
+  oldPaidAmount: number;
+  newPaidAmount: number;
+  token: string;
+}) => {
+  console.log(
+    newDueAmount,
+    newPaidAmount,
+    oldDueAmount,
+    oldNetPayable,
+    oldPaidAmount,
+    newNetPayable
+  );
+  let journalEntries: any[] = [];
+
+  // Journal data
+  if (oldNetPayable !== newNetPayable) {
+    if (oldNetPayable > newNetPayable) {
+      const amount = oldNetPayable - newNetPayable;
+      journalEntries = [
+        ...journalEntries,
+        {
+          account: LedgerEnum.AccountsReceivable,
+          credit: 0,
+          debit: amount,
+          journalType: ENUMJournalType.GENERAL,
+          budgetType: ENUMBudgetType.REGULAR,
+          memo: 'To Update the ordered amount',
+        },
+        {
+          account: LedgerEnum.Service_Income_Diagonestic,
+          credit: amount,
+          debit: 0,
+          journalType: ENUMJournalType.GENERAL,
+          budgetType: ENUMBudgetType.REGULAR,
+          memo: 'To Update the ordered amount',
+        },
+      ];
+    } else {
+      const amount = newNetPayable - oldNetPayable;
+      journalEntries = [
+        ...journalEntries,
+        {
+          account: LedgerEnum.Service_Income_Diagonestic,
+          credit: 0,
+          debit: amount,
+          journalType: ENUMJournalType.GENERAL,
+          budgetType: ENUMBudgetType.REGULAR,
+          memo: 'To Update the ordered amount',
+        },
+        {
+          account: LedgerEnum.AccountsReceivable,
+          credit: amount,
+          debit: 0,
+          journalType: ENUMJournalType.GENERAL,
+          budgetType: ENUMBudgetType.REGULAR,
+          memo: 'To Update the ordered amount',
+        },
+      ];
+    }
+  }
+
+  if (oldPaidAmount !== newPaidAmount) {
+    if (oldPaidAmount > newPaidAmount) {
+      const amount = oldPaidAmount - newPaidAmount;
+      journalEntries = [
+        ...journalEntries,
+        {
+          account: LedgerEnum.AccountsReceivable,
+          credit: 0,
+          debit: amount,
+          journalType: ENUMJournalType.GENERAL,
+          budgetType: ENUMBudgetType.REGULAR,
+          memo: 'To Update the ordered amount',
+        },
+        {
+          account: LedgerEnum.CashInHand,
+          credit: amount,
+          debit: 0,
+          journalType: ENUMJournalType.GENERAL,
+          budgetType: ENUMBudgetType.REGULAR,
+          memo: 'To Update the ordered amount',
+        },
+      ];
+    } else {
+      const amount = newPaidAmount - oldPaidAmount;
+      journalEntries = [
+        ...journalEntries,
+        {
+          account: LedgerEnum.CashInHand,
+          credit: 0,
+          debit: amount,
+          journalType: ENUMJournalType.GENERAL,
+          budgetType: ENUMBudgetType.REGULAR,
+          memo: 'To Update the ordered amount',
+        },
+        {
+          account: LedgerEnum.AccountsReceivable,
+          credit: amount,
+          debit: 0,
+          journalType: ENUMJournalType.GENERAL,
+          budgetType: ENUMBudgetType.REGULAR,
+          memo: 'To Update the ordered amount',
+        },
+      ];
+    }
+  }
+
+  if (journalEntries.length) {
+    await AccountService.post(
+      Account_Service_Api_Path.JOURNAL,
+      journalEntries,
+      {
+        headers: {
+          Authorization: token,
+        },
+      }
+    );
+  }
 };
 export const journalEntryService = {
   postOrderJournalEntry,
   postJournalEntryForDueCollection,
   postJournalEntryForDoctorCommission,
+  postJournalEntryForPatch,
 };

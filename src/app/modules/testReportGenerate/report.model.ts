@@ -50,8 +50,18 @@ export const Report = model<IReport>('Reports', reportSchema);
 // for parameterBased
 const parameterBasedSchema = new Schema<IReportForParameter>(
   {
+    testId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Test',
+      required: true,
+    },
     testResult: [
       {
+        testId: {
+          type: Schema.Types.ObjectId,
+          ref: 'Test',
+          required: true,
+        },
         test: {
           type: String,
           set: (a: string) => (a === '' ? undefined : a),

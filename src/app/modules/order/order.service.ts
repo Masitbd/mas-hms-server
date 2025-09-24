@@ -1,10 +1,11 @@
+/* eslint-disable no-unused-expressions */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-unused-vars */
+
 import { createCanvas } from 'canvas';
 import httpStatus from 'http-status';
 import JsBarcode from 'jsbarcode';
 import mongoose, { PipelineStage, Types } from 'mongoose';
-import { ENUM_RESULT_TYPE } from '../../../enums/resultTypeEnum';
 import { ENUM_TEST_STATUS } from '../../../enums/testStatusEnum';
 import ApiError from '../../../errors/ApiError';
 import { paginationHelpers } from '../../../helpers/paginationHelper';
@@ -194,6 +195,7 @@ const fetchAll = async ({
         return;
       }
       if (field == 'patientType') {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         if (otherFilterOption.patientType == ('' || 'all')) {
           return;
@@ -230,68 +232,104 @@ const orderPatch = async (param: {
   data: Partial<IOrder>;
   user: string;
 }) => {
-  const { data, id, user } = param;
-  const doesExists = await Order.findOne({ _id: param.id });
-  if (!doesExists) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Order not found');
-  }
-  const {
-    cashDiscount,
-    discountBasedOnParcent,
-    discountGivenByDoctor,
-    totalTestPrice,
-    tubePrice,
-    vat,
-  } = await totalPriceCalculator(data as IOrder);
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { data, id, user } = param;
+    const doesExists = await Order.findOne({ _id: param.id }).session(session);
+    if (!doesExists) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Order not found');
+    }
+    const {
+      cashDiscount,
+      discountBasedOnParcent,
+      discountGivenByDoctor,
+      totalTestPrice,
+      tubePrice,
+      vat,
+    } = await totalPriceCalculator(data as IOrder);
 
-  // CHecking for paid amount
-  if (data.paid) {
-    // IF paid amount is greater the amount will be marked as collection fon order
-    if (data.paid > doesExists.paid) {
-      const account = await Account.find({ title: 'Order' });
-      await TransactionService.postTransaction({
-        amount: data.paid - doesExists.paid,
-        description: 'Payment for order',
-        transactionType: 'debit',
-        ref: id as unknown as Types.ObjectId,
-        uuid: account[0].uuid,
-        postedBy: user,
-      });
+    // CHecking for paid amount
+    if (data.paid) {
+      // IF paid amount is greater the amount will be marked as collection fon order
+      if (data.paid > doesExists.paid) {
+        const account = await Account.find({ title: 'Order' }).session(session);
+        await TransactionService.postTransaction({
+          amount: data.paid - doesExists.paid,
+          description: 'Payment for order',
+          transactionType: 'debit',
+          ref: id as unknown as Types.ObjectId,
+          uuid: account[0].uuid,
+          postedBy: user,
+        });
+      }
     }
 
-    // If paid amount is less than the amount will be marked as refund for order
-    // if (data.paid < doesExists.paid) {
-    //   await Refund.create({
-    //     oid: data?.oid,
-    //     discount: 0,
-    //     grossAmount: doesExists.paid - data.paid,
-    //     netAmount: doesExists.paid - data.paid,
-    //     refundApplied: 0,
-    //     refundedBy: user,
-    //     remainingRefund: doesExists.paid - data.paid,
-    //     id: 0,
-    //     vat: data?.vat,
-    //   });
-    // }
+    data.tubePrice = tubePrice;
+    data.totalPrice = totalTestPrice + tubePrice;
+    data.dueAmount =
+      data.discountedBy == 'free'
+        ? 0
+        : totalTestPrice +
+          tubePrice -
+          discountBasedOnParcent -
+          discountGivenByDoctor -
+          (data?.cashDiscount ?? 0) -
+          (data?.paid ?? 0) +
+          vat;
+
+    // Setting test status
+
+    data?.tests?.map(t => {
+      const oldTest = doesExists?.tests?.find(
+        T => T?.test?.toString() == t?.test?.toString()
+      );
+
+      t.status = oldTest?.status ? oldTest?.status : 'pending';
+
+      return t;
+    });
+
+    console.log(data);
+
+    const result = await Order.findOneAndUpdate({ _id: param.id }, data, {
+      new: true,
+    }).session(session);
+
+    // For Journal entry
+    const oldNetPayable = doesExists.netPayable;
+    const newNetPayable =
+      data.totalPrice -
+      discountBasedOnParcent -
+      discountGivenByDoctor -
+      (data?.cashDiscount ?? 0) +
+      vat;
+    const oldDueAmount = doesExists?.dueAmount;
+    const newDueAmount = data.dueAmount;
+    const oldPaidAmount = doesExists?.paid;
+    const newPaidAmount = data.paid ?? 0;
+    await journalEntryService.postJournalEntryForPatch({
+      newDueAmount: newDueAmount,
+      oldPaidAmount: oldPaidAmount,
+      newPaidAmount: newPaidAmount,
+      oldDueAmount: oldDueAmount,
+      oldNetPayable: oldNetPayable,
+      newNetPayable: newNetPayable,
+      token: 'String',
+    });
+
+    await session.commitTransaction();
+    return result;
+  } catch (error) {
+    console.error(error);
+    await session.abortTransaction();
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      (error ?? 'Internal Server Error') as string
+    );
+  } finally {
+    await session.endSession();
   }
-
-  data.tubePrice = tubePrice;
-  data.totalPrice = totalTestPrice + tubePrice;
-  data.dueAmount =
-    data.discountedBy == 'free'
-      ? 0
-      : totalTestPrice +
-        tubePrice -
-        discountBasedOnParcent -
-        discountGivenByDoctor -
-        (data?.cashDiscount ?? 0) -
-        (data?.paid ?? 0) +
-        vat;
-
-  const result = await Order.findOneAndUpdate({ _id: param.id }, data, {
-    new: true,
-  });
-  return result;
 };
 
 const fetchIvoice = async (params: string) => {
@@ -602,7 +640,7 @@ const fetchIvoice = async (params: string) => {
     address: order[0].patient.address,
     consultant,
 
-    createdAt: new Date(order[0].createdAt).toLocaleDateString(),
+    createdAt: new Date(order[0].createdAt).toUTCString(),
     deliveryDate: new Date(
       order[0].deliveryTime ?? new Date().toLocaleDateString()
     ).toLocaleDateString(),
@@ -970,47 +1008,47 @@ const singleOrderstatusChanger = async (params: {
   }
 
   order.tests.forEach((test: ITestsFromOrder) => {
+    // if (
+    //   'reportGroup' in test.test &&
+    //   reportGroup._id.equals(test.test.reportGroup) &&
+    //   test.status !== 'refunded' &&
+    //   reportGroup?.testResultType == ENUM_RESULT_TYPE.PARAMETER_BASED
+    // ) {
+    //   if (test.status == 'delivered') {
+    //     throw new ApiError(
+    //       httpStatus.BAD_REQUEST,
+    //       'Test report had already delivered. Now status cannot be changed'
+    //     );
+    //   }
+    //   test.status = params.status;
+    //   if (
+    //     'isCommissionFiexed' in reportGroup.department &&
+    //     !reportGroup.department.isCommissionFiexed
+    //   ) {
+    //     commission += Math.ceil(
+    //       (test.test.price * Number(department.commissionParcentage)) / 100
+    //     );
+    //   }
+    //   if (department.isCommissionFiexed) {
+    //     commission += commission + Number(department.fixedCommission);
+    //   }
+    //   if (test.discount) {
+    //     discount += Math.ceil((test.test.price * Number(test.discount)) / 100);
+    //     return;
+    //   }
+    //   if (order.parcentDiscount) {
+    //     discount += Math.ceil(
+    //       (test.test.price * Number(order.parcentDiscount)) / 100
+    //     );
+    //     return;
+    //   } else return;
+    // } else
     if (
       'reportGroup' in test.test &&
       reportGroup._id.equals(test.test.reportGroup) &&
       test.status !== 'refunded' &&
-      reportGroup?.testResultType == ENUM_RESULT_TYPE.PARAMETER_BASED
-    ) {
-      if (test.status == 'delivered') {
-        throw new ApiError(
-          httpStatus.BAD_REQUEST,
-          'Test report had already delivered. Now status cannot be changed'
-        );
-      }
-      test.status = params.status;
-      if (
-        'isCommissionFiexed' in reportGroup.department &&
-        !reportGroup.department.isCommissionFiexed
-      ) {
-        commission += Math.ceil(
-          (test.test.price * Number(department.commissionParcentage)) / 100
-        );
-      }
-      if (department.isCommissionFiexed) {
-        commission += commission + Number(department.fixedCommission);
-      }
-      if (test.discount) {
-        discount += Math.ceil((test.test.price * Number(test.discount)) / 100);
-        return;
-      }
-      if (order.parcentDiscount) {
-        discount += Math.ceil(
-          (test.test.price * Number(order.parcentDiscount)) / 100
-        );
-        return;
-      } else return;
-    } else if (
-      'reportGroup' in test.test &&
-      reportGroup._id.equals(test.test.reportGroup) &&
-      test.status !== 'refunded' &&
-      reportGroup?.testResultType !== ENUM_RESULT_TYPE.PARAMETER_BASED &&
       params?.test &&
-      test?.test?._id?.equals(params.test)
+      params.test?.split("'").includes(test?.test?._id?.toString() as string)
     ) {
       if (test.status == 'delivered') {
         throw new ApiError(
@@ -1217,7 +1255,6 @@ const getIncomeStatementFromDB = async (payload: {
         },
       },
     },
-
     {
       $group: {
         _id: {
@@ -1236,6 +1273,7 @@ const getIncomeStatementFromDB = async (payload: {
         dueAmount: { $first: '$dueAmount' },
         paid: { $first: '$paid' },
         uuid: { $first: '$uuid' },
+
         records: {
           $push: {
             oid: '$orderInfo.oid',
@@ -1275,6 +1313,7 @@ const getIncomeStatementFromDB = async (payload: {
     {
       $group: {
         _id: '$_id.groupDate',
+
         records: { $push: { $first: '$records' } },
       },
     },
@@ -1323,6 +1362,7 @@ const getDueBillsDetailFromDB = async (query: Record<string, any>) => {
     };
   }
 
+  match.dueAmount = { $gt: 0 };
   match.dueAmount = { $gt: 0 };
   match.remarks = { $in: [null, '', undefined] };
 
