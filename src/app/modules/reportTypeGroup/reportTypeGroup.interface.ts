@@ -4,6 +4,7 @@ export type IReportTypeGroup = {
   group: string;
   resultType: string;
   reportGroup: Types.ObjectId;
+  isHidden: boolean;
 };
 
 export type reportTypeServiceProps = {

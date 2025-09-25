@@ -54,9 +54,24 @@ const getAll = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const changeHeaderVisibility = catchAsync(
+  async (req: Request, res: Response) => {
+    const id = req.params.id;
+    const result = ReportTypeGroupService.changeVisibility(id, req?.body);
+
+    sendResponse(res, {
+      data: result,
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Header visibility changed successfully',
+    });
+  }
+);
+
 export const ReportTypeGroupController = {
   createNew,
   update,
   getSingle,
   getAll,
+  changeHeaderVisibility,
 };
