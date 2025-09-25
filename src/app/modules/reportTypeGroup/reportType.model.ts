@@ -16,6 +16,10 @@ const schema = new Schema<IReportTypeGroup>(
       required: true,
       ref: 'ReportGroup',
     },
+    isHidden: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { ReportType } from '../reportType/reportType.model';
 import { ReportTypeGroup } from './reportType.model';
 import {
   IFilterableOptions,
@@ -30,4 +31,25 @@ const fetchAll = async (params: Partial<IFilterableOptions>) => {
   return await ReportTypeGroup.find(iFcondition).populate('reportGroup');
 };
 
-export const ReportTypeGroupService = { post, patch, fetchSingle, fetchAll };
+const changeVisibility = async (
+  id: string,
+  data: {
+    isHidden: boolean;
+  }
+) => {
+  await ReportType.updateMany(
+    { reportTypeGroup: new Types.ObjectId(id) },
+    { isHidden: data?.isHidden ?? false }
+  );
+  await ReportTypeGroup.findByIdAndUpdate(id, {
+    isHidden: data?.isHidden ?? false,
+  });
+};
+
+export const ReportTypeGroupService = {
+  post,
+  patch,
+  fetchSingle,
+  fetchAll,
+  changeVisibility,
+};

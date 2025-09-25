@@ -22,6 +22,7 @@ export type ITestForMicrobiology = {
 };
 
 export type IReportType = {
+  isHidden: boolean;
   reportTypeGroup: Types.ObjectId;
 };
 export type IReportTypeForParameter = IReportType & ITestForParameter;
