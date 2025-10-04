@@ -8,7 +8,7 @@ import globalErrorHandler from './app/middlewares/globalErrorHandler';
 
 const app: Application = express();
 const corsOptions = {
-  origin: 'https://mas-hms-frontend.vercel.app',
+  origin: 'http://localhost:3000',
 };
 app.use(cors(corsOptions));
 app.use(cookieParser());
