@@ -855,6 +855,14 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
       },
     },
 
+    {
+      $addFields: {
+        totalPriceWithoutTube: {
+          $subtract: ['$orderInfo.totalPrice', '$orderInfo.tubePrice'],
+        },
+      },
+    },
+
     // Calculate per-test discount
     {
       $addFields: {
@@ -865,7 +873,7 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
               $divide: [
                 {
                   $multiply: [
-                    '$orderInfo.totalPrice',
+                    '$totalPriceWithoutTube',
                     { $ifNull: ['$testDetails.discount', 0] },
                   ],
                 },
@@ -881,7 +889,7 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
                   $divide: [
                     {
                       $multiply: [
-                        '$orderInfo.totalPrice',
+                        '$totalPriceWithoutTube',
                         { $ifNull: ['$orderInfo.parcentDiscount', 0] },
                       ],
                     },
@@ -906,11 +914,11 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
               $divide: [
                 {
                   $multiply: [
-                    '$testPrice',
+                    '$totalPriceWithoutTube',
                     { $ifNull: ['$orderInfo.cashDiscount', 0] },
                   ],
                 },
-                '$orderInfo.totalPrice',
+                '$totalPriceWithoutTube',
               ],
             },
             else: 0,
@@ -923,7 +931,7 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
       $addFields: {
         testPriceAfterDiscount: {
           $subtract: [
-            '$orderInfo.totalPrice',
+            '$totalPriceWithoutTube',
             {
               $add: [
                 { $ifNull: ['$testPercentDiscount', 0] },
@@ -955,7 +963,11 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
     {
       $addFields: {
         testPriceWithVat: {
-          $add: ['$testPriceAfterDiscount', { $ifNull: ['$testVatAmount', 0] }],
+          $add: [
+            '$totalPriceWithoutTube',
+            { $ifNull: ['$testVatAmount', 0] },
+            { $ifNull: ['$orderInfo.tubePrice', 0] },
+          ],
         },
       },
     },
