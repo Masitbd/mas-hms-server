@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PipelineStage } from 'mongoose';
 import { Order } from '../order/order.model';
+import { Refund } from '../refund/refund.model';
 import { Transation } from '../transaction/transaction.model';
 
 const getEmployeeIncomeStatementFromDB = async (
@@ -433,34 +434,289 @@ const getDueCollectionStatementFromDB = async (query: Record<string, any>) => {
     {
       $sort: { createdAt: -1 },
     },
-    // Bill No,
-    // Patient Name,
-    // Total Bill,
-    // Total Discount,
-    // Previous Collection,
-    // Due Amount,
-    // Due Collection,
-    // Balance Due
-    // Group the results by refBy.name
-    // {
-    //   $group: {
-    //     _id: '$refDoctor.name', // Group by doctor name (refBy)
-    //     records: {
-    //       $push:
-    //     },
-    //   },
-    // },
-
-    // // Rename the _id field to refBy for clarity
-    // {
-    //   $project: {
-    //     _id: 0, // Exclude _id
-    //     refBy: '$_id', // Rename _id to refBy
-    //     records: 1, // Include the records array
-    //   },
-    // },
   ]);
 
+  return result;
+};
+
+// ! get refund statement
+
+const getRefundStatementFromDB = async (query: Record<string, any>) => {
+  const startDate = query.startDate ? new Date(query.startDate) : new Date();
+  const endDate = query.endDate ? new Date(query.endDate) : new Date();
+  startDate.setUTCHours(0, 0, 0, 0);
+
+  endDate.setUTCHours(23, 59, 59, 999);
+
+  // pipleline
+
+  const pipeline: PipelineStage[] = [
+    // match
+    {
+      $match: {
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: 'orders',
+        localField: 'oid',
+        foreignField: 'oid',
+        as: 'orderInfo',
+      },
+    },
+    {
+      $unwind: {
+        path: '$orderInfo',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    //
+
+    {
+      $addFields: {
+        refundedTests: {
+          $filter: {
+            input: '$orderInfo.tests',
+            as: 'test',
+            cond: { $eq: ['$$test.status', 'refunded'] },
+          },
+        },
+      },
+    },
+
+    // 👇 Unwind only the refunded tests
+    {
+      $unwind: {
+        path: '$refundedTests',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    // 👇 Lookup details of refunded tests from `tests` collection
+    {
+      $lookup: {
+        from: 'tests',
+        localField: 'refundedTests.test',
+        foreignField: '_id',
+        as: 'testDetails',
+      },
+    },
+    {
+      $unwind: {
+        path: '$testDetails',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    {
+      $addFields: {
+        pd: {
+          $cond: {
+            if: {
+              $or: [
+                { $gt: [{ $ifNull: ['$orderInfo.tests.discount', 0] }, 0] },
+                { $gt: [{ $ifNull: ['$orderInfo.parcentDiscount', 0] }, 0] },
+              ],
+            },
+            then: {
+              $cond: {
+                if: { $gt: [{ $ifNull: ['$orderInfo.tests.discount', 0] }, 0] },
+                then: {
+                  $divide: [
+                    {
+                      $multiply: [
+                        '$testDetails.price',
+                        { $ifNull: ['$orderInfo.tests.discount', 0] },
+                      ],
+                    },
+                    100,
+                  ],
+                },
+                else: {
+                  $divide: [
+                    {
+                      $multiply: [
+                        '$orderInfo.totalPrice',
+                        { $ifNull: ['$orderInfo.parcentDiscount', 0] },
+                      ],
+                    },
+                    100,
+                  ],
+                },
+              },
+            },
+            else: 0,
+          },
+        },
+
+        cd: { $ifNull: ['$orderInfo.cashDiscount', 0] },
+
+        vatAmount: {
+          $cond: {
+            if: { $gt: ['$orderInfo.vat', 0] },
+            then: {
+              $multiply: [
+                {
+                  $subtract: [
+                    '$orderInfo.totalPrice', // DB থেকে আসা totalPrice
+                    {
+                      $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
+                    },
+                  ],
+                },
+                { $divide: ['$orderInfo.vat', 100] },
+              ],
+            },
+            else: 0,
+          },
+        },
+
+        // 👉 নতুন ফিল্ড: vat সহ total
+        priceWithVat: {
+          $add: ['$orderInfo.totalPrice', { $ifNull: ['$vatAmount', 0] }],
+        },
+      },
+    },
+
+    {
+      $addFields: {
+        pd: {
+          $cond: {
+            if: {
+              $or: [
+                { $gt: [{ $ifNull: ['$orderInfo.tests.discount', 0] }, 0] },
+                { $gt: [{ $ifNull: ['$orderInfo.parcentDiscount', 0] }, 0] },
+              ],
+            },
+            then: {
+              $cond: {
+                if: { $gt: [{ $ifNull: ['$orderInfo.tests.discount', 0] }, 0] },
+                then: {
+                  $divide: [
+                    {
+                      $multiply: [
+                        '$testDetails.price',
+                        { $ifNull: ['$orderInfo.tests.discount', 0] },
+                      ],
+                    },
+                    100,
+                  ],
+                },
+                else: {
+                  $divide: [
+                    {
+                      $multiply: [
+                        '$orderInfo.totalPrice',
+                        { $ifNull: ['$orderInfo.parcentDiscount', 0] },
+                      ],
+                    },
+                    100,
+                  ],
+                },
+              },
+            },
+            else: 0,
+          },
+        },
+
+        cd: { $ifNull: ['$orderInfo.cashDiscount', 0] },
+
+        vatAmount: {
+          $cond: {
+            if: { $gt: ['$orderInfo.vat', 0] },
+            then: {
+              $multiply: [
+                {
+                  $subtract: [
+                    '$orderInfo.totalPrice', // DB থেকে আসা totalPrice
+                    {
+                      $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
+                    },
+                  ],
+                },
+                { $divide: ['$orderInfo.vat', 100] },
+              ],
+            },
+            else: 0,
+          },
+        },
+
+        // 👉 নতুন ফিল্ড: vat সহ total
+        priceWithVat: {
+          $add: ['$orderInfo.totalPrice', { $ifNull: ['$vatAmount', 0] }],
+        },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          groupDate: {
+            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+          },
+        },
+        totalPrice: { $first: '$orderInfo.totalPrice' }, // শুধু DB থেকে totalPrice
+        totalTestPrice: { $sum: '$testDetails.price' },
+        testDetails: { $push: '$testDetails' },
+        discountedPrice: { $first: '$discountedPrice' },
+        vat: { $first: '$vatAmount' },
+        priceWithVat: { $first: '$priceWithVat' }, // আলাদা করে রাখলাম
+        finalPrice: { $first: '$finalPrice' },
+        dueAmount: { $first: '$dueAmount' },
+        paid: { $first: '$paid' },
+        uuid: { $first: '$uuid' },
+
+        records: {
+          $push: {
+            oid: '$orderInfo.oid',
+            uuid: '$orderInfo.uuid',
+            totalPrice: '$orderInfo.totalPrice', // DB value
+            refundAmount: '$netAmount',
+            vat: '$vatAmount',
+            priceWithVat: '$priceWithVat',
+            finalPrice: '$finalPrice',
+            cashDiscount: '$cd',
+            parcentDiscountAmount: '$pd',
+            totalDis: {
+              $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
+            },
+            totalAmount: {
+              $subtract: [
+                '$priceWithVat', // DB totalPrice + vat
+                { $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }] },
+              ],
+            },
+            paid: { $subtract: ['$amount', '$refundAmount'] },
+          },
+        },
+      },
+    },
+
+    { $addFields: { 'records.totalTestPrice': '$totalTestPrice' } },
+
+    {
+      $sort: { createDeflate: -1 },
+    },
+    {
+      $group: {
+        _id: '$_id.groupDate',
+
+        records: { $push: { $first: '$records' } },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        groupDate: '$_id',
+        records: 1,
+      },
+    },
+  ];
+
+  const result = await Refund.aggregate(pipeline);
   return result;
 };
 
@@ -469,4 +725,5 @@ export const incomeStatementServices = {
   getEmployeeIncomeStatementSummeryFromDB,
   getLastTwentyEightDaysPaidAmountFromDB,
   getDueCollectionStatementFromDB,
+  getRefundStatementFromDB,
 };
