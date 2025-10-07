@@ -450,8 +450,331 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
 
   // pipleline
 
+  // const pipeline: PipelineStage[] = [
+  //   // match
+  //   {
+  //     $match: {
+  //       createdAt: {
+  //         $gte: startDate,
+  //         $lte: endDate,
+  //       },
+  //     },
+  //   },
+  //   {
+  //     $lookup: {
+  //       from: 'orders',
+  //       localField: 'oid',
+  //       foreignField: 'oid',
+  //       as: 'orderInfo',
+  //     },
+  //   },
+  //   {
+  //     $unwind: {
+  //       path: '$orderInfo',
+  //       preserveNullAndEmptyArrays: true,
+  //     },
+  //   },
+  //   //
+
+  //   {
+  //     $addFields: {
+  //       refundedTests: {
+  //         $filter: {
+  //           input: '$orderInfo.tests',
+  //           as: 'test',
+  //           cond: { $eq: ['$$test.status', 'refunded'] },
+  //         },
+  //       },
+  //     },
+  //   },
+
+  //   // 👇 Unwind only the refunded tests
+  //   {
+  //     $unwind: {
+  //       path: '$refundedTests',
+  //       preserveNullAndEmptyArrays: true,
+  //     },
+  //   },
+
+  //   // 👇 Lookup details of refunded tests from `tests` collection
+  //   {
+  //     $lookup: {
+  //       from: 'tests',
+  //       localField: 'refundedTests.test',
+  //       foreignField: '_id',
+  //       as: 'testDetails',
+  //     },
+  //   },
+  //   {
+  //     $unwind: {
+  //       path: '$testDetails',
+  //       preserveNullAndEmptyArrays: true,
+  //     },
+  //   },
+
+  //   // ? calculate discount to add field
+  //   {
+  //     $addFields: {
+  //       pd: {
+  //         $cond: {
+  //           if: {
+  //             $or: [
+  //               { $gt: [{ $ifNull: ['$refundedTests.discount', 0] }, 0] },
+  //               { $gt: [{ $ifNull: ['$orderInfo.parcentDiscount', 0] }, 0] },
+  //             ],
+  //           },
+  //           then: {
+  //             $cond: {
+  //               if: { $gt: [{ $ifNull: ['$refundedTests.discount', 0] }, 0] },
+  //               then: {
+  //                 $divide: [
+  //                   {
+  //                     $multiply: [
+  //                       '$testDetails.price',
+  //                       { $ifNull: ['$refundedTests.discount', 0] },
+  //                     ],
+  //                   },
+  //                   100,
+  //                 ],
+  //               },
+  //               else: {
+  //                 $divide: [
+  //                   {
+  //                     $multiply: [
+  //                       '$orderInfo.totalPrice',
+  //                       { $ifNull: ['$orderInfo.parcentDiscount', 0] },
+  //                     ],
+  //                   },
+  //                   100,
+  //                 ],
+  //               },
+  //             },
+  //           },
+  //           else: 0,
+  //         },
+  //       },
+
+  //       cd: { $ifNull: ['$orderInfo.cashDiscount', 0] },
+
+  //       vatAmount: {
+  //         $cond: {
+  //           if: { $gt: ['$orderInfo.vat', 0] },
+  //           then: {
+  //             $multiply: [
+  //               {
+  //                 $subtract: [
+  //                   '$orderInfo.totalPrice',
+  //                   {
+  //                     $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
+  //                   },
+  //                 ],
+  //               },
+  //               { $divide: ['$orderInfo.vat', 100] },
+  //             ],
+  //           },
+  //           else: 0,
+  //         },
+  //       },
+
+  //       priceWithVat: {
+  //         $add: ['$orderInfo.totalPrice', { $ifNull: ['$vatAmount', 0] }],
+  //       },
+  //     },
+  //   },
+
+  //   // Group by each refund entry (no early $first)
+  //   // {
+  //   //   $group: {
+  //   //     _id: {
+  //   //       groupDate: {
+  //   //         $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+  //   //       },
+  //   //       oid: '$orderInfo.oid',
+  //   //       refundId: '$_id', // ensure each refund stays unique
+  //   //     },
+  //   //     totalPrice: { $first: '$orderInfo.totalPrice' },
+  //   //     totalTestPrice: { $sum: '$testDetails.price' },
+  //   //     vat: { $first: '$vatAmount' },
+  //   //     priceWithVat: { $first: '$priceWithVat' },
+  //   //     cashDiscount: { $first: '$cd' },
+  //   //     parcentDiscountAmount: { $first: '$pd' },
+  //   //     refundAmount: { $first: '$netAmount' },
+  //   //     testName: { $first: '$testDetails.label' },
+  //   //   },
+  //   // },
+
+  //   // // Now group by date — keep all refund records separate
+  //   // {
+  //   //   $group: {
+  //   //     _id: '$_id.groupDate',
+  //   //     records: {
+  //   //       $push: {
+  //   //         oid: '$_id.oid',
+  //   //         refundId: '$_id.refundId',
+  //   //         totalPrice: '$totalPrice',
+  //   //         totalTestPrice: '$totalTestPrice',
+  //   //         testName: '$testName',
+  //   //         refundAmount: '$refundAmount',
+  //   //         vat: '$vat',
+  //   //         priceWithVat: '$priceWithVat',
+  //   //         cashDiscount: '$cashDiscount',
+  //   //         parcentDiscountAmount: '$parcentDiscountAmount',
+  //   //         totalDis: {
+  //   //           $add: [
+  //   //             { $ifNull: ['$cashDiscount', 0] },
+  //   //             { $ifNull: ['$parcentDiscountAmount', 0] },
+  //   //           ],
+  //   //         },
+  //   //         totalAmount: {
+  //   //           $subtract: [
+  //   //             '$priceWithVat',
+  //   //             {
+  //   //               $add: [
+  //   //                 { $ifNull: ['$cashDiscount', 0] },
+  //   //                 { $ifNull: ['$parcentDiscountAmount', 0] },
+  //   //               ],
+  //   //             },
+  //   //           ],
+  //   //         },
+  //   //       },
+  //   //     },
+  //   //   },
+  //   // },
+
+  //   // // Final projection
+  //   // {
+  //   //   $project: {
+  //   //     _id: 0,
+  //   //     groupDate: '$_id',
+  //   //     records: 1,
+  //   //   },
+  //   // },
+  //   // 1️⃣ First group: per refundId (keep all details per refund)
+  //   // 🧮 Step 1: group per oid per date (same as before)
+  //   {
+  //     $group: {
+  //       _id: {
+  //         groupDate: {
+  //           $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+  //         },
+  //         oid: '$orderInfo.oid',
+  //       },
+  //       totalPrice: { $first: '$orderInfo.totalPrice' },
+  //       totalTestPrice: { $sum: '$testDetails.price' },
+  //       totalRefundAmount: { $sum: '$netAmount' },
+  //       vat: { $first: '$vatAmount' },
+  //       priceWithVat: { $first: '$priceWithVat' },
+  //       cashDiscount: { $first: '$cd' },
+  //       parcentDiscountAmount: { $first: '$pd' },
+  //       testNames: { $addToSet: '$testDetails.label' },
+  //     },
+  //   },
+
+  //   // 🧾 Step 2: compute derived totals before grouping by date
+  //   {
+  //     $addFields: {
+  //       totalDis: {
+  //         $add: [
+  //           { $ifNull: ['$cashDiscount', 0] },
+  //           { $ifNull: ['$parcentDiscountAmount', 0] },
+  //         ],
+  //       },
+  //       totalAmount: {
+  //         $subtract: [
+  //           { $ifNull: ['$priceWithVat', 0] },
+  //           {
+  //             $add: [
+  //               { $ifNull: ['$cashDiscount', 0] },
+  //               { $ifNull: ['$parcentDiscountAmount', 0] },
+  //             ],
+  //           },
+  //         ],
+  //       },
+  //     },
+  //   },
+
+  //   // 📅 Step 3: group by date for final output
+  //   {
+  //     $group: {
+  //       _id: '$_id.groupDate',
+  //       records: {
+  //         $push: {
+  //           oid: '$_id.oid',
+  //           totalPrice: '$totalPrice',
+  //           totalTestPrice: '$totalTestPrice',
+  //           totalRefundAmount: '$totalRefundAmount',
+  //           vat: '$vat',
+  //           priceWithVat: '$priceWithVat',
+  //           cashDiscount: '$cashDiscount',
+  //           parcentDiscountAmount: '$parcentDiscountAmount',
+  //           testNames: '$testNames',
+  //           totalDis: '$totalDis',
+  //           totalAmount: '$totalAmount',
+  //         },
+  //       },
+  //     },
+  //   },
+
+  //   // ✅ Step 4: project clean output
+  //   {
+  //     $project: {
+  //       _id: 0,
+  //       groupDate: '$_id',
+  //       records: 1,
+  //     },
+  //   },
+  // ];
+
+  // First, let's add a debugging pipeline to see what's happening
+  const debugPipeline: PipelineStage[] = [
+    {
+      $match: {
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+        oid: 'H251000003', // Debug specific order
+      },
+    },
+    {
+      $lookup: {
+        from: 'orders',
+        localField: 'oid',
+        foreignField: 'oid',
+        as: 'orderInfo',
+      },
+    },
+    {
+      $unwind: {
+        path: '$orderInfo',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $addFields: {
+        refundedTests: {
+          $filter: {
+            input: '$orderInfo.tests',
+            as: 'test',
+            cond: { $eq: ['$$test.status', 'refunded'] },
+          },
+        },
+      },
+    },
+    // 🔍 DEBUG: Check how many refunded tests exist
+    {
+      $project: {
+        refundId: '$_id',
+        oid: 1,
+        netAmount: 1,
+        refundedTestsCount: { $size: { $ifNull: ['$refundedTests', []] } },
+        refundedTests: 1,
+      },
+    },
+  ];
+
+  // ===== FIXED PIPELINE =====
   const pipeline: PipelineStage[] = [
-    // match
     {
       $match: {
         createdAt: {
@@ -474,8 +797,6 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
         preserveNullAndEmptyArrays: true,
       },
     },
-    //
-
     {
       $addFields: {
         refundedTests: {
@@ -488,15 +809,21 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
       },
     },
 
-    // 👇 Unwind only the refunded tests
+    // ✅ FIX: Only continue if there are refunded tests
     {
-      $unwind: {
-        path: '$refundedTests',
-        preserveNullAndEmptyArrays: true,
+      $match: {
+        refundedTests: { $ne: [] },
       },
     },
 
-    // 👇 Lookup details of refunded tests from `tests` collection
+    // Unwind refunded tests
+    {
+      $unwind: {
+        path: '$refundedTests',
+      },
+    },
+
+    // Lookup test details
     {
       $lookup: {
         from: 'tests',
@@ -508,35 +835,49 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
     {
       $unwind: {
         path: '$testDetails',
-        preserveNullAndEmptyArrays: true,
       },
     },
 
+    // ✅ CRITICAL FIX: Group by refund _id first to avoid duplicates
+    {
+      $group: {
+        _id: {
+          refundId: '$_id',
+          oid: '$oid',
+          testId: '$testDetails._id',
+        },
+        createdAt: { $first: '$createdAt' },
+        netAmount: { $first: '$netAmount' },
+        testPrice: { $first: '$testDetails.price' },
+        testLabel: { $first: '$testDetails.label' },
+        orderInfo: { $first: '$orderInfo' },
+        refundedTests: { $first: '$refundedTests' },
+      },
+    },
+
+    // Calculate per-test discount
     {
       $addFields: {
-        pd: {
+        testPercentDiscount: {
           $cond: {
-            if: {
-              $or: [
-                { $gt: [{ $ifNull: ['$orderInfo.tests.discount', 0] }, 0] },
-                { $gt: [{ $ifNull: ['$orderInfo.parcentDiscount', 0] }, 0] },
-              ],
-            },
+            if: { $gt: [{ $ifNull: ['$testDetails.discount', 0] }, 0] },
             then: {
-              $cond: {
-                if: { $gt: [{ $ifNull: ['$orderInfo.tests.discount', 0] }, 0] },
-                then: {
-                  $divide: [
-                    {
-                      $multiply: [
-                        '$testDetails.price',
-                        { $ifNull: ['$orderInfo.tests.discount', 0] },
-                      ],
-                    },
-                    100,
+              $divide: [
+                {
+                  $multiply: [
+                    '$orderInfo.totalPrice',
+                    { $ifNull: ['$testDetails.discount', 0] },
                   ],
                 },
-                else: {
+                100,
+              ],
+            },
+            else: {
+              $cond: {
+                if: {
+                  $gt: [{ $ifNull: ['$orderInfo.parcentDiscount', 0] }, 0],
+                },
+                then: {
                   $divide: [
                     {
                       $multiply: [
@@ -547,166 +888,160 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
                     100,
                   ],
                 },
+                else: 0,
               },
             },
-            else: 0,
           },
         },
 
-        cd: { $ifNull: ['$orderInfo.cashDiscount', 0] },
-
-        vatAmount: {
+        testCashDiscount: {
           $cond: {
-            if: { $gt: ['$orderInfo.vat', 0] },
+            if: {
+              $and: [
+                { $gt: [{ $ifNull: ['$orderInfo.cashDiscount', 0] }, 0] },
+                { $gt: [{ $ifNull: ['$orderInfo.totalPrice', 0] }, 0] },
+              ],
+            },
             then: {
-              $multiply: [
+              $divide: [
                 {
-                  $subtract: [
-                    '$orderInfo.totalPrice', // DB থেকে আসা totalPrice
-                    {
-                      $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
-                    },
+                  $multiply: [
+                    '$testPrice',
+                    { $ifNull: ['$orderInfo.cashDiscount', 0] },
                   ],
                 },
-                { $divide: ['$orderInfo.vat', 100] },
+                '$orderInfo.totalPrice',
               ],
             },
             else: 0,
           },
-        },
-
-        // 👉 নতুন ফিল্ড: vat সহ total
-        priceWithVat: {
-          $add: ['$orderInfo.totalPrice', { $ifNull: ['$vatAmount', 0] }],
         },
       },
     },
 
     {
       $addFields: {
-        pd: {
-          $cond: {
-            if: {
-              $or: [
-                { $gt: [{ $ifNull: ['$orderInfo.tests.discount', 0] }, 0] },
-                { $gt: [{ $ifNull: ['$orderInfo.parcentDiscount', 0] }, 0] },
+        testPriceAfterDiscount: {
+          $subtract: [
+            '$orderInfo.totalPrice',
+            {
+              $add: [
+                { $ifNull: ['$testPercentDiscount', 0] },
+                { $ifNull: ['$testCashDiscount', 0] },
               ],
             },
-            then: {
-              $cond: {
-                if: { $gt: [{ $ifNull: ['$orderInfo.tests.discount', 0] }, 0] },
-                then: {
-                  $divide: [
-                    {
-                      $multiply: [
-                        '$testDetails.price',
-                        { $ifNull: ['$orderInfo.tests.discount', 0] },
-                      ],
-                    },
-                    100,
-                  ],
-                },
-                else: {
-                  $divide: [
-                    {
-                      $multiply: [
-                        '$orderInfo.totalPrice',
-                        { $ifNull: ['$orderInfo.parcentDiscount', 0] },
-                      ],
-                    },
-                    100,
-                  ],
-                },
-              },
-            },
-            else: 0,
-          },
-        },
-
-        cd: { $ifNull: ['$orderInfo.cashDiscount', 0] },
-
-        vatAmount: {
-          $cond: {
-            if: { $gt: ['$orderInfo.vat', 0] },
-            then: {
-              $multiply: [
-                {
-                  $subtract: [
-                    '$orderInfo.totalPrice', // DB থেকে আসা totalPrice
-                    {
-                      $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
-                    },
-                  ],
-                },
-                { $divide: ['$orderInfo.vat', 100] },
-              ],
-            },
-            else: 0,
-          },
-        },
-
-        // 👉 নতুন ফিল্ড: vat সহ total
-        priceWithVat: {
-          $add: ['$orderInfo.totalPrice', { $ifNull: ['$vatAmount', 0] }],
+          ],
         },
       },
     },
+
+    {
+      $addFields: {
+        testVatAmount: {
+          $cond: {
+            if: { $gt: [{ $ifNull: ['$orderInfo.vat', 0] }, 0] },
+            then: {
+              $multiply: [
+                '$testPriceAfterDiscount',
+                { $divide: [{ $ifNull: ['$orderInfo.vat', 0] }, 100] },
+              ],
+            },
+            else: 0,
+          },
+        },
+      },
+    },
+
+    {
+      $addFields: {
+        testPriceWithVat: {
+          $add: ['$testPriceAfterDiscount', { $ifNull: ['$testVatAmount', 0] }],
+        },
+      },
+    },
+
+    // ✅ Group by refund ID to get per-refund totals
+    {
+      $group: {
+        _id: {
+          refundId: '$_id.refundId',
+          oid: '$_id.oid',
+        },
+        createdAt: { $first: '$createdAt' },
+        netAmount: { $first: '$netAmount' },
+
+        // Sum all tests in THIS refund
+        totalTestPrice: { $sum: '$testPrice' },
+        totalTestPercentDiscount: { $first: '$testPercentDiscount' },
+        totalTestCashDiscount: { $sum: '$testCashDiscount' },
+        totalTestVat: { $sum: '$testVatAmount' },
+        totalTestPriceWithVat: { $first: '$testPriceWithVat' },
+
+        orderInfo: { $first: '$orderInfo' },
+        testNames: { $addToSet: '$testLabel' },
+      },
+    },
+
+    // Group by oid and date
     {
       $group: {
         _id: {
           groupDate: {
             $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
           },
+          oid: '$_id.oid',
         },
-        totalPrice: { $first: '$orderInfo.totalPrice' }, // শুধু DB থেকে totalPrice
-        totalTestPrice: { $sum: '$testDetails.price' },
-        testDetails: { $push: '$testDetails' },
-        discountedPrice: { $first: '$discountedPrice' },
-        vat: { $first: '$vatAmount' },
-        priceWithVat: { $first: '$priceWithVat' }, // আলাদা করে রাখলাম
-        finalPrice: { $first: '$finalPrice' },
-        dueAmount: { $first: '$dueAmount' },
-        paid: { $first: '$paid' },
-        uuid: { $first: '$uuid' },
 
+        // ✅ Sum across all refunds for this oid on this date
+        totalTestPrice: { $first: '$totalTestPrice' },
+        totalRefundAmount: { $sum: '$netAmount' },
+        totalTestPercentDiscount: { $first: '$totalTestPercentDiscount' },
+        totalTestCashDiscount: { $first: '$totalTestCashDiscount' },
+        totalTestVat: { $first: '$totalTestVat' },
+        totalTestPriceWithVat: { $first: '$totalTestPriceWithVat' },
+
+        orderTotalPrice: { $first: '$orderInfo.totalPrice' },
+        orderVat: { $first: '$orderInfo.vat' },
+        orderCashDiscount: { $first: '$orderInfo.cashDiscount' },
+        orderPercentDiscount: { $first: '$orderInfo.parcentDiscount' },
+
+        testNames: { $first: '$testNames' },
+      },
+    },
+
+    {
+      $addFields: {
+        totalDis: {
+          $add: [
+            { $ifNull: ['$totalTestCashDiscount', 0] },
+            { $ifNull: ['$totalTestPercentDiscount', 0] },
+          ],
+        },
+      },
+    },
+
+    // Group by date
+    {
+      $group: {
+        _id: '$_id.groupDate',
         records: {
           $push: {
-            oid: '$orderInfo.oid',
-            uuid: '$orderInfo.uuid',
-            totalPrice: '$orderInfo.totalPrice', // DB value
-            refundAmount: '$netAmount',
-            vat: '$vatAmount',
-            priceWithVat: '$priceWithVat',
-            finalPrice: '$finalPrice',
-            cashDiscount: '$cd',
-            parcentDiscountAmount: '$pd',
-            totalDis: {
-              $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }],
-            },
-            totalAmount: {
-              $subtract: [
-                '$priceWithVat', // DB totalPrice + vat
-                { $add: [{ $ifNull: ['$cd', 0] }, { $ifNull: ['$pd', 0] }] },
-              ],
-            },
-            paid: { $subtract: ['$amount', '$refundAmount'] },
+            oid: '$_id.oid',
+            totalPrice: '$orderTotalPrice',
+            totalTestPrice: '$totalTestPrice',
+            totalRefundAmount: '$totalRefundAmount',
+            vat: '$totalTestVat',
+            priceWithVat: '$totalTestPriceWithVat',
+            cashDiscount: '$totalTestCashDiscount',
+            parcentDiscountAmount: '$totalTestPercentDiscount',
+            testNames: '$testNames',
+            totalDis: '$totalDis',
+            totalAmount: '$totalTestPriceWithVat',
           },
         },
       },
     },
 
-    { $addFields: { 'records.totalTestPrice': '$totalTestPrice' } },
-
-    {
-      $sort: { createDeflate: -1 },
-    },
-    {
-      $group: {
-        _id: '$_id.groupDate',
-
-        records: { $push: { $first: '$records' } },
-      },
-    },
     {
       $project: {
         _id: 0,

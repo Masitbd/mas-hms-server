@@ -25,5 +25,6 @@ router.get(
   '/due-collection-statement',
   incomeStatementControllers.getDueCollectionStatement
 );
+router.get('/refund-statement', incomeStatementControllers.getRefundStatement);
 
 export const incomeStatementRoutes = { router };
