@@ -1009,6 +1009,7 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
         totalRefundAmount: { $sum: '$netAmount' },
         totalTestPercentDiscount: { $first: '$totalTestPercentDiscount' },
         totalTestCashDiscount: { $first: '$totalTestCashDiscount' },
+
         totalTestVat: { $first: '$totalTestVat' },
         totalTestPriceWithVat: { $first: '$totalTestPriceWithVat' },
 
@@ -1016,6 +1017,9 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
         orderVat: { $first: '$orderInfo.vat' },
         orderCashDiscount: { $first: '$orderInfo.cashDiscount' },
         orderPercentDiscount: { $first: '$orderInfo.parcentDiscount' },
+        orderNetPayable: { $first: '$orderInfo.netPayable' },
+        orderPaid: { $first: '$orderInfo.paid' },
+        orderDue: { $first: '$orderInfo.dueAmount' },
 
         testNames: { $first: '$testNames' },
       },
@@ -1044,21 +1048,35 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
             totalRefundAmount: '$totalRefundAmount',
             vat: '$totalTestVat',
             priceWithVat: '$totalTestPriceWithVat',
-            cashDiscount: '$totalTestCashDiscount',
-            parcentDiscountAmount: '$totalTestPercentDiscount',
+            totalCashDiscount: '$totalTestCashDiscount',
+            totalParcentDiscountAmount: '$totalTestPercentDiscount',
+            cashDiscount: '$orderCashDiscount',
+            parcentDiscountAmount: '$orderPercentDiscount',
+            netPayable: '$orderNetPayable',
+            paid: '$orderPaid',
+            due: '$orderDue',
             testNames: '$testNames',
             totalDis: '$totalDis',
             totalAmount: '$totalTestPriceWithVat',
           },
         },
+        grandTotal: { $sum: '$totalRefundAmount' },
       },
     },
 
+    // {
+    //   $project: {
+    //     _id: 0,
+    //     groupDate: '$_id',
+    //     records: 1,
+    //     grandTotal: 1,
+    //   },
+    // },
     {
-      $project: {
-        _id: 0,
-        groupDate: '$_id',
-        records: 1,
+      $group: {
+        _id: null,
+        records: { $push: '$$ROOT' },
+        overallGrandTotal: { $sum: '$grandTotal' },
       },
     },
   ];
