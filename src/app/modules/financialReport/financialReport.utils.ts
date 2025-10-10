@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PipelineStage, Types } from 'mongoose';
 
@@ -2230,15 +2231,11 @@ export const newBillSummeryPipeline = (
     {
       $match: {
         postedBy: { $ne: null },
+        description: 'Payment for order',
         createdAt: {
-          $gte: from,
           $lte: toDate,
+          $gte: from,
         },
-      },
-    },
-    {
-      $sort: {
-        createdAt: 1,
       },
     },
     {
@@ -2254,8 +2251,19 @@ export const newBillSummeryPipeline = (
     },
     {
       $lookup: {
+        from: 'orders',
+        localField: 'ref',
+        foreignField: '_id',
+        as: 'orderData',
+      },
+    },
+    {
+      $unwind: '$orderData',
+    },
+    {
+      $lookup: {
         from: 'patients',
-        localField: 'uuid',
+        localField: 'orderData.uuid',
         foreignField: 'uuid',
         as: 'patientData',
       },
@@ -2264,9 +2272,9 @@ export const newBillSummeryPipeline = (
       $addFields: {
         pd: {
           $cond: {
-            if: { $eq: ['$patientType', 'registered'] },
+            if: { $eq: ['$orderData.patientType', 'registered'] },
             then: '$patientData',
-            else: ['$patient'],
+            else: ['$orderData.patient'],
           },
         },
       },
@@ -2275,18 +2283,12 @@ export const newBillSummeryPipeline = (
       $unwind: '$pd',
     },
     {
-      $lookup: {
-        from: 'patients',
-        localField: 'uuid',
-        foreignField: 'uuid',
-        as: 'patientData',
-      },
-    },
-    {
       $addFields: {
         patient: '$pd.name',
+        oid: '$orderData.oid',
       },
     },
+
     {
       $facet: {
         mainDocs: [
@@ -2296,19 +2298,20 @@ export const newBillSummeryPipeline = (
               oid: 1,
               patient: 1,
               user: '$postedBy.name',
-              amount: '$totalPrice',
+              amount: 1,
             },
           },
         ],
+
         totalDocs: [
           {
-            $group: { _id: null, amount: { $sum: '$totalPrice' } },
+            $group: { _id: null, amount: { $sum: '$amount' } },
           },
           {
             $project: {
               amount: 1,
-              patient: 'Total',
               createdAt: '$$NOW',
+              patient: 'Total',
               user: 'Total',
             },
           },
@@ -2641,3 +2644,198 @@ export const employeePerfromanceSummeryPipeline = (
     },
   ];
 };
+
+// types.ts
+export interface Bill {
+  _id: string | null; // null for "Total" rows
+  amount: number;
+  createdAt?: string | Date;
+  patient?: string;
+  oid?: string; // order id (used to match refunds)
+  user?: string;
+}
+
+export interface OrderData {
+  dewBills: Bill[];
+  newBills: Bill[];
+}
+
+export interface Refund {
+  _id: string; // matches Bill.oid
+  refundApplied: number; // NOT changed
+  remainingRefund: number; // to be applied
+}
+
+export interface RefundPerIdSummary {
+  appliedToNewBills: number;
+  appliedToDueBills: number;
+  leftover: number;
+}
+
+export interface ApplyRefundsSummary {
+  perRefund: Record<string, RefundPerIdSummary>;
+  totalAppliedToNewBills: number;
+  totalAppliedToDueBills: number;
+  totalLeftover: number;
+}
+
+export interface ApplyRefundsResult {
+  orderData: OrderData;
+  summary: ApplyRefundsSummary;
+}
+
+// utils.ts
+const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
+
+const isTotalRow = (b?: Bill | null): boolean =>
+  !!b &&
+  (b._id == null ||
+    b.patient === 'Total' ||
+    b.user === 'Total' ||
+    b.oid === 'Total');
+
+const removeZeroAmountBills = (bills?: Bill[]): Bill[] => {
+  if (!Array.isArray(bills)) return [];
+  return bills.filter(b => b && (isTotalRow(b) || (Number(b.amount) ?? 0) > 0));
+};
+
+const recomputeTotalRow = (bills?: Bill[]): Bill[] => {
+  // Clean zero-amounts first; keep total rows
+  const list = removeZeroAmountBills(bills);
+
+  const sum = list
+    .filter(b => b && !isTotalRow(b))
+    .reduce((acc, b) => acc + (Number(b.amount) || 0), 0);
+
+  const idx = list.findIndex(isTotalRow);
+  const totalRow: Bill = {
+    _id: null,
+    amount: sum,
+    createdAt: new Date().toISOString(),
+    patient: 'Total',
+    user: 'Total',
+  };
+
+  if (idx >= 0) {
+    const updated = clone(list);
+    updated[idx] = { ...list[idx], ...totalRow };
+    return updated;
+  }
+  return [...list, totalRow];
+};
+
+/**
+ * Deducts from a list (matching refundId to bill.oid), returns:
+ *  - applied amount
+ *  - updated list with any 0-amount non-total bills removed
+ */
+const applyToList = (
+  refundId: string,
+  amountToApply: number,
+  bills: Bill[] | undefined
+): { applied: number; updated: Bill[] } => {
+  if (!Array.isArray(bills) || amountToApply <= 0) {
+    return { applied: 0, updated: Array.isArray(bills) ? clone(bills) : [] };
+  }
+
+  const updated = clone(bills);
+  let remaining = amountToApply;
+  let applied = 0;
+
+  for (let i = 0; i < updated.length && remaining > 0; i++) {
+    const bill = updated[i];
+    if (!bill || isTotalRow(bill)) continue;
+    if (bill.oid !== refundId) continue;
+
+    const billAmt = Number(bill.amount) || 0;
+    if (billAmt <= 0) continue;
+
+    const deduction = Math.min(billAmt, remaining);
+    const newAmt = billAmt - deduction;
+
+    updated[i] = { ...bill, amount: newAmt };
+    applied += deduction;
+    remaining -= deduction;
+  }
+
+  // Remove 0-amount non-total bills right away
+  return { applied, updated: removeZeroAmountBills(updated) };
+};
+
+// main.ts
+/**
+ * Apply refunds to order data (immutable).
+ * - Deduct remainingRefund from newBills first, then dewBills.
+ * - Remove any bill whose amount becomes 0 (except "Total" rows).
+ * - Recompute/normalize "Total" rows at the end.
+ */
+export function applyRefundsToEmployeeIncomeSummery(
+  orderData: OrderData | undefined,
+  refunds: Refund[] | undefined
+): ApplyRefundsResult {
+  const base: OrderData = clone(orderData ?? { dewBills: [], newBills: [] });
+  base.newBills = Array.isArray(base.newBills) ? base.newBills : [];
+  base.dewBills = Array.isArray(base.dewBills) ? base.dewBills : [];
+
+  const summary: ApplyRefundsSummary = {
+    perRefund: {},
+    totalAppliedToNewBills: 0,
+    totalAppliedToDueBills: 0,
+    totalLeftover: 0,
+  };
+
+  // If no refunds, just normalize (also removes any stray zero-amount rows)
+  if (!refunds?.length) {
+    return {
+      orderData: {
+        newBills: recomputeTotalRow(base.newBills),
+        dewBills: recomputeTotalRow(base.dewBills),
+      },
+      summary,
+    };
+  }
+
+  let workingNew = clone(base.newBills);
+  let workingDue = clone(base.dewBills);
+
+  for (const r of refunds) {
+    if (!r?._id) continue;
+
+    let remaining = Number(r.remainingRefund) || 0;
+    if (remaining <= 0) {
+      summary.perRefund[r._id] = {
+        appliedToNewBills: 0,
+        appliedToDueBills: 0,
+        leftover: 0,
+      };
+      continue;
+    }
+
+    const toNew = applyToList(r._id, remaining, workingNew);
+    workingNew = toNew.updated;
+    remaining -= toNew.applied;
+
+    let toDueApplied = 0;
+    if (remaining > 0) {
+      const toDue = applyToList(r._id, remaining, workingDue);
+      workingDue = toDue.updated;
+      toDueApplied = toDue.applied;
+      remaining -= toDue.applied;
+    }
+
+    summary.perRefund[r._id] = {
+      appliedToNewBills: toNew.applied,
+      appliedToDueBills: toDueApplied,
+      leftover: Math.max(0, remaining),
+    };
+    summary.totalAppliedToNewBills += toNew.applied;
+    summary.totalAppliedToDueBills += toDueApplied;
+    summary.totalLeftover += Math.max(0, remaining);
+  }
+
+  // Final cleanup + total rows
+  const finalNew = recomputeTotalRow(workingNew);
+  const finalDue = recomputeTotalRow(workingDue);
+
+  return { orderData: { newBills: finalNew, dewBills: finalDue }, summary };
+}

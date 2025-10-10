@@ -1,9 +1,11 @@
 import { PipelineStage, Types } from 'mongoose';
 import { Doctor } from '../doctor/doctor.model';
 import { Order } from '../order/order.model';
+import { Refund } from '../refund/refund.model';
 import { Test } from '../test/test.model';
 import { Transation } from '../transaction/transaction.model';
 import {
+  applyRefundsToEmployeeIncomeSummery,
   clientWiseIncomeStatementPipeline,
   departmentWiseCollectionSummeryPipeline,
   departmentWiseIncomeStatement,
@@ -109,14 +111,39 @@ const getEmployeeLedger = async (params: { from: Date; to: Date }) => {
   const dewBillSummery = await Transation.aggregate(
     dewCollectionSummeryPipeline({ from: startDate, to: endDate })
   );
-  const newBillSummery = await Order.aggregate(
+  const newBillSummery = await Transation.aggregate(
     newBillSummeryPipeline({ from: startDate, to: endDate })
   );
+  console.log(newBillSummery);
   const result = {
     dewBills: dewBillSummery,
     newBills: newBillSummery,
   };
-  return result;
+
+  const refunds = await Refund.aggregate([
+    {
+      $match: {
+        createdAt: {
+          $lte: endDate,
+          $gte: startDate,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: '$oid',
+        refundApplied: { $sum: '$refundApplied' },
+        remainingRefund: { $sum: '$remainingRefund' },
+      },
+    },
+  ]);
+
+  const modifiedDatawithRefund = applyRefundsToEmployeeIncomeSummery(
+    result,
+    refunds
+  );
+
+  return modifiedDatawithRefund?.orderData;
 };
 
 const fetchAllTest = async () => {

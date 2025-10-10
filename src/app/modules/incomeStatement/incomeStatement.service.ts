@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PipelineStage } from 'mongoose';
 import { Order } from '../order/order.model';
+import { Refund } from '../refund/refund.model';
 import { Transation } from '../transaction/transaction.model';
+import { buildRefundedGroups } from './IncomeSummery.helpers';
+import { applyRefundsToDaySummery, DaySummery } from './incomeSummery.utils';
 
 const getEmployeeIncomeStatementFromDB = async (
   payload: Record<string, any>
@@ -23,6 +26,7 @@ const getEmployeeIncomeStatementFromDB = async (
           $gte: startDate,
           $lte: endDate,
         },
+        paid: { $ne: 0 },
       },
     },
     {
@@ -100,7 +104,29 @@ const getEmployeeIncomeStatementFromDB = async (
   ];
 
   const result = await Order.aggregate(query);
-  return result;
+  const refunds = await Refund.aggregate([
+    {
+      $match: {
+        createdAt: {
+          $lte: endDate,
+          $gte: startDate,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: '$oid',
+        refundApplied: { $sum: '$refundApplied' },
+        remainingRefund: { $sum: '$remainingRefund' },
+      },
+    },
+  ]);
+
+  const { daySummery: updated } = applyRefundsToDaySummery(
+    result as unknown as DaySummery,
+    refunds
+  );
+  return updated;
 };
 
 ///
@@ -117,13 +143,14 @@ const getEmployeeIncomeStatementSummeryFromDB = async (
 
   endDate.setUTCHours(23, 59, 59, 999);
 
-  const query: PipelineStage[] = [
+  const orderData = await Order.aggregate([
     {
       $match: {
         createdAt: {
           $gte: startDate,
           $lte: endDate,
         },
+        paid: { $ne: 0 },
       },
     },
     {
@@ -142,46 +169,40 @@ const getEmployeeIncomeStatementSummeryFromDB = async (
       },
     },
     {
-      $group: {
-        _id: {
-          groupDate: {
-            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
-          },
-          postedBy: '$postedBy',
-          name: '$userDetails.name',
-        },
-        totalPaid: { $sum: '$paid' },
-        uuid: { $first: '$postedBy' },
-      },
-    },
-    {
-      $sort: { '_id.groupDate': 1 }, // Sort by group date
-    },
-    {
-      $group: {
-        _id: '$_id.groupDate', // Group by date
-        records: {
-          $push: {
-            name: '$_id.name', // Push the user's name
-            totalPaid: '$totalPaid', // Include total paid amount
-            uuid: '$uuid', // Include the user's UUID
-          },
-        },
-        grandTotal: { $sum: 'totalPaid' },
-      },
-    },
-    {
       $project: {
-        _id: 0,
-        groupDate: '$_id', // Rename _id to groupDate
-        records: 1, // Include the records array
-        grandTotal: { $sum: 'totalPaid' },
+        oid: 1,
+        paid: 1,
+        createdAt: 1,
+        postedBy: 1,
+        userDetails: {
+          name: 1,
+          uuid: 1,
+        },
       },
     },
-  ];
+  ]);
+  const refunds = await Refund.aggregate([
+    {
+      $match: {
+        createdAt: {
+          $lte: endDate,
+          $gte: startDate,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: '$oid',
+        refundApplied: { $sum: '$refundApplied' },
+        remainingRefund: { $sum: '$remainingRefund' },
+      },
+    },
+  ]);
 
-  const result = await Order.aggregate(query);
-  return result;
+  const testResult = buildRefundedGroups(orderData, refunds, {
+    grandTotalFromSum: true,
+  });
+  return testResult;
 };
 
 // ? total income last 28 day
