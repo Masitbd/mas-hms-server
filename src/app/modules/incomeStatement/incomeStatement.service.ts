@@ -746,52 +746,52 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
   // ];
 
   // First, let's add a debugging pipeline to see what's happening
-  const debugPipeline: PipelineStage[] = [
-    {
-      $match: {
-        createdAt: {
-          $gte: startDate,
-          $lte: endDate,
-        },
-        oid: 'H251000003', // Debug specific order
-      },
-    },
-    {
-      $lookup: {
-        from: 'orders',
-        localField: 'oid',
-        foreignField: 'oid',
-        as: 'orderInfo',
-      },
-    },
-    {
-      $unwind: {
-        path: '$orderInfo',
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $addFields: {
-        refundedTests: {
-          $filter: {
-            input: '$orderInfo.tests',
-            as: 'test',
-            cond: { $eq: ['$$test.status', 'refunded'] },
-          },
-        },
-      },
-    },
-    // 🔍 DEBUG: Check how many refunded tests exist
-    {
-      $project: {
-        refundId: '$_id',
-        oid: 1,
-        netAmount: 1,
-        refundedTestsCount: { $size: { $ifNull: ['$refundedTests', []] } },
-        refundedTests: 1,
-      },
-    },
-  ];
+  // const debugPipeline: PipelineStage[] = [
+  //   {
+  //     $match: {
+  //       createdAt: {
+  //         $gte: startDate,
+  //         $lte: endDate,
+  //       },
+  //       oid: 'H251000003', // Debug specific order
+  //     },
+  //   },
+  //   {
+  //     $lookup: {
+  //       from: 'orders',
+  //       localField: 'oid',
+  //       foreignField: 'oid',
+  //       as: 'orderInfo',
+  //     },
+  //   },
+  //   {
+  //     $unwind: {
+  //       path: '$orderInfo',
+  //       preserveNullAndEmptyArrays: true,
+  //     },
+  //   },
+  //   {
+  //     $addFields: {
+  //       refundedTests: {
+  //         $filter: {
+  //           input: '$orderInfo.tests',
+  //           as: 'test',
+  //           cond: { $eq: ['$$test.status', 'refunded'] },
+  //         },
+  //       },
+  //     },
+  //   },
+  //   // 🔍 DEBUG: Check how many refunded tests exist
+  //   {
+  //     $project: {
+  //       refundId: '$_id',
+  //       oid: 1,
+  //       netAmount: 1,
+  //       refundedTestsCount: { $size: { $ifNull: ['$refundedTests', []] } },
+  //       refundedTests: 1,
+  //     },
+  //   },
+  // ];
 
   // ===== FIXED PIPELINE =====
   const pipeline: PipelineStage[] = [
@@ -867,7 +867,7 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
           testId: '$testDetails._id',
         },
         createdAt: { $first: '$createdAt' },
-        netAmount: { $first: '$netAmount' },
+        netAmount: { $first: '$remainingRefund' },
         testPrice: { $first: '$testDetails.price' },
         testLabel: { $first: '$testDetails.label' },
         orderInfo: { $first: '$orderInfo' },
@@ -1102,6 +1102,8 @@ const getRefundStatementFromDB = async (query: Record<string, any>) => {
   ];
 
   const result = await Refund.aggregate(pipeline);
+
+  // console.log(JSON.stringify(result));
   return result;
 };
 
