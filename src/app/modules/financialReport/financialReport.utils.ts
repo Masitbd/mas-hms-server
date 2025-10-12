@@ -2190,7 +2190,7 @@ export const dewCollectionSummeryPipeline = (params: {
             $project: {
               amount: 1,
               createdAt: '$$NOW',
-              patient: 'Total',
+              patient: '  ',
               user: 'Total',
             },
           },
@@ -2311,7 +2311,7 @@ export const newBillSummeryPipeline = (
             $project: {
               amount: 1,
               createdAt: '$$NOW',
-              patient: 'Total',
+              patient: '  ',
               user: 'Total',
             },
           },
@@ -2712,7 +2712,7 @@ const recomputeTotalRow = (bills?: Bill[]): Bill[] => {
     _id: null,
     amount: sum,
     createdAt: new Date().toISOString(),
-    patient: 'Total',
+    patient: '    ',
     user: 'Total',
   };
 
