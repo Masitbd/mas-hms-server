@@ -114,7 +114,7 @@ const getEmployeeLedger = async (params: { from: Date; to: Date }) => {
   const newBillSummery = await Transation.aggregate(
     newBillSummeryPipeline({ from: startDate, to: endDate })
   );
-  console.log(newBillSummery);
+
   const result = {
     dewBills: dewBillSummery,
     newBills: newBillSummery,
