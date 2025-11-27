@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { AccountService } from '../account/account.service';
 import { ITransaction } from './transaction.interface';
 import { Transation } from './transaction.model';
 
@@ -7,9 +6,9 @@ const postTransaction = async (data: ITransaction) => {
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
-    if (data.uuid) {
-      const accountResult = await AccountService.patchAccount(data);
-    }
+    // if (data.uuid) {
+    //   const accountResult = await AccountService.patchAccount(data);
+    // }
     const result = await Transation.create(data);
 
     await session.commitTransaction();
@@ -30,7 +29,6 @@ const fetchSingleTransaction = async (data: string) => {
 };
 
 const fetchSIngleByUuid = async (data: string) => {
-  console.log(data, 'uuid');
   const result = await Transation.find({ uuid: data });
   return result;
 };

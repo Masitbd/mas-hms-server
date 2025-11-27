@@ -1,8 +1,6 @@
-import { Account_Service_Api_Path } from '../../../enums/accountServiceApiPath';
 import LedgerEnum from '../../../enums/ENUMAccountHeads';
 import { ENUMBudgetType } from '../../../enums/ENUMBudgetType';
 import { ENUMJournalType } from '../../../enums/ENUMJournalTYpe';
-import { AccountService } from '../../../shared/axios';
 
 export type IJournalEntry = {
   account: string;
@@ -25,7 +23,6 @@ export const postOrderJournalEntry = async ({
   due: number;
   token: string;
 }) => {
-  console.log(orderAmount, paid, due);
   const journalEntry: IJournalEntry[] = [
     {
       account: LedgerEnum.Service_Income_Diagonestic,
@@ -58,18 +55,16 @@ export const postOrderJournalEntry = async ({
     });
   }
 
-  console.log(journalEntry);
-
-  const result = await AccountService.post(
-    Account_Service_Api_Path.JOURNAL,
-    journalEntry,
-    {
-      headers: {
-        Authorization: token,
-      },
-    }
-  );
-  return result;
+  // const result = await AccountService.post(
+  //   Account_Service_Api_Path.JOURNAL,
+  //   journalEntry,
+  //   {
+  //     headers: {
+  //       Authorization: token,
+  //     },
+  //   }
+  // );
+  // return result;
 };
 
 const postJournalEntryForDueCollection = async ({
@@ -98,16 +93,16 @@ const postJournalEntryForDueCollection = async ({
     },
   ];
 
-  const result = await AccountService.post(
-    Account_Service_Api_Path.JOURNAL,
-    journalEntry,
-    {
-      headers: {
-        Authorization: token,
-      },
-    }
-  );
-  return result;
+  // const result = await AccountService.post(
+  //   Account_Service_Api_Path.JOURNAL,
+  //   journalEntry,
+  //   {
+  //     headers: {
+  //       Authorization: token,
+  //     },
+  //   }
+  // );
+  // return result;
 };
 
 const postJournalEntryForDoctorCommission = async ({
@@ -136,17 +131,17 @@ const postJournalEntryForDoctorCommission = async ({
     },
   ];
 
-  const result = await AccountService.post(
-    Account_Service_Api_Path.JOURNAL,
-    journalEntry,
-    {
-      headers: {
-        Authorization: token,
-      },
-    }
-  );
+  // const result = await AccountService.post(
+  //   Account_Service_Api_Path.JOURNAL,
+  //   journalEntry,
+  //   {
+  //     headers: {
+  //       Authorization: token,
+  //     },
+  //   }
+  // );
 
-  return result;
+  // return result;
 };
 
 const postJournalEntryForPatch = async ({
@@ -270,17 +265,17 @@ const postJournalEntryForPatch = async ({
     }
   }
 
-  if (journalEntries.length) {
-    await AccountService.post(
-      Account_Service_Api_Path.JOURNAL,
-      journalEntries,
-      {
-        headers: {
-          Authorization: token,
-        },
-      }
-    );
-  }
+  // if (journalEntries.length) {
+  //   await AccountService.post(
+  //     Account_Service_Api_Path.JOURNAL,
+  //     journalEntries,
+  //     {
+  //       headers: {
+  //         Authorization: token,
+  //       },
+  //     }
+  //   );
+  // }
 };
 export const journalEntryService = {
   postOrderJournalEntry,

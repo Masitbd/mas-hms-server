@@ -7,3 +7,7 @@ export type TCompanyInfo = {
   photoUrl: string;
   publicId: string; // For cloudinary image
 };
+
+export type TCompanyInfoForOffline = TCompanyInfo & {
+  photo: string;
+};
