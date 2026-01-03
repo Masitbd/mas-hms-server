@@ -3,3 +3,8 @@ node_modules
 logs
 dist
 .vercel
+out
+my-server
+hello.exe
+sea-prep.blob
+my-server.exe

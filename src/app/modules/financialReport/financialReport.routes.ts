@@ -52,6 +52,12 @@ routes.get(
   auth(ENUM_USER_PEMISSION.GET_FINANCIAL_REPORT),
   FinancialReportController.getTestWiseDoctorPerformance
 );
+
+routes.get(
+  '/doctorsPerformance/orderWise',
+  auth(ENUM_USER_PEMISSION.GET_FINANCIAL_REPORT),
+  FinancialReportController.getOrderWiseDoctorPerformance
+);
 routes.get(
   '/employeeLedger',
   auth(ENUM_USER_PEMISSION.GET_FINANCIAL_REPORT),

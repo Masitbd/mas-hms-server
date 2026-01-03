@@ -93,12 +93,13 @@ const getDeptWIseCollectionSummery = catchAsync(
 
 const getDeptWiseDoctorPerformance = catchAsync(
   async (req: Request, res: Response) => {
-    const filteredField = pick(req.query, ['from', 'to']);
+    const filteredField = pick(req.query, ['from', 'to', 'type']);
 
     const result = await FinancialReportService.fetchDeptWIseDoctorPerformance({
       from: filteredField.from as unknown as Date,
       to: filteredField.to as unknown as Date,
       refBy: req.params.id,
+      type: filteredField.type as string,
     });
 
     sendResponse(res, {
@@ -113,18 +114,42 @@ const getDeptWiseDoctorPerformance = catchAsync(
 
 const getTestWiseDoctorPerformance = catchAsync(
   async (req: Request, res: Response) => {
-    const filteredField = pick(req.query, ['from', 'to']);
+    const filteredField = pick(req.query, ['from', 'to', 'type']);
+    console.log(filteredField);
 
     const result = await FinancialReportService.fetchTestWIseDoctorPerformance({
       from: filteredField.from as unknown as Date,
       to: filteredField.to as unknown as Date,
       refBy: req.params.id,
+      type: filteredField.type as string,
     });
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
       message: 'Test wise doctor Performance summery featched successfully',
+      data: result,
+    });
+  }
+);
+
+const getOrderWiseDoctorPerformance = catchAsync(
+  async (req: Request, res: Response) => {
+    const filteredField = pick(req.query, ['from', 'to', 'type', 'refBy']);
+
+    const result = await FinancialReportService.fetchOrderWIseDoctorPerformance(
+      {
+        from: filteredField.from as unknown as Date,
+        to: filteredField.to as unknown as Date,
+        refBy: filteredField.refBy as string,
+        type: filteredField.type as string,
+      }
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Order  wise doctor Performance summery retrieved successfully',
       data: result,
     });
   }
@@ -239,4 +264,5 @@ export const FinancialReportController = {
   getAllTests,
   getAllDoctors,
   marketingExecutivePerformance,
+  getOrderWiseDoctorPerformance,
 };

@@ -2,9 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-unused-vars */
 
-import { createCanvas } from 'canvas';
 import httpStatus from 'http-status';
-import JsBarcode from 'jsbarcode';
 import mongoose, { PipelineStage, Types } from 'mongoose';
 import { ENUM_TEST_STATUS } from '../../../enums/testStatusEnum';
 import ApiError from '../../../errors/ApiError';
@@ -597,13 +595,13 @@ const fetchIvoice = async (params: string) => {
   }
   // for barcode
 
-  const barcodeDoc = createCanvas(20, 20);
-  JsBarcode(barcodeDoc, order[0].oid, {
-    height: 20,
-    width: 1,
-    displayValue: false,
-  });
-  const barcodeUrl = barcodeDoc.toDataURL('image/png');
+  // const barcodeDoc = createCanvas(20, 20);
+  // JsBarcode(barcodeDoc, order[0].oid, {
+  //   height: 20,
+  //   width: 1,
+  //   displayValue: false,
+  // });
+  // const barcodeUrl = barcodeDoc.toDataURL('image/png');
 
   // for margin or company Info
   const companyInfo = await CompanyInfo.findOne({ default: true });
@@ -674,7 +672,6 @@ const fetchIvoice = async (params: string) => {
     dueAmount:
       order[0].discountedBy !== 'free' ? Math.ceil(order[0].dueAmount) : 0,
     parcentDiscount: order[0].parcentDiscount || 0,
-    img: barcodeUrl,
     remainingRefund,
     refundApplied,
     vat: order[0].vat,
