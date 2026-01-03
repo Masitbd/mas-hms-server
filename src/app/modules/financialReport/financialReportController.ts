@@ -133,6 +133,28 @@ const getTestWiseDoctorPerformance = catchAsync(
   }
 );
 
+const getOrderWiseDoctorPerformance = catchAsync(
+  async (req: Request, res: Response) => {
+    const filteredField = pick(req.query, ['from', 'to', 'type', 'refBy']);
+
+    const result = await FinancialReportService.fetchOrderWIseDoctorPerformance(
+      {
+        from: filteredField.from as unknown as Date,
+        to: filteredField.to as unknown as Date,
+        refBy: filteredField.refBy as string,
+        type: filteredField.type as string,
+      }
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Order  wise doctor Performance summery retrieved successfully',
+      data: result,
+    });
+  }
+);
+
 const clientWiseIncomeStatement = catchAsync(
   async (req: Request, res: Response) => {
     const filteredField = pick(req.query, ['from', 'to']);
@@ -242,4 +264,5 @@ export const FinancialReportController = {
   getAllTests,
   getAllDoctors,
   marketingExecutivePerformance,
+  getOrderWiseDoctorPerformance,
 };

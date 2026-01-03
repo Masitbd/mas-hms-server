@@ -26,7 +26,7 @@ const orderSchema = new Schema<IOrder>(
     status: { type: String, required: true },
     dueAmount: { type: Number, required: true },
     paid: { type: Number, required: true },
-    
+
     vat: { type: Number },
     remarks: { type: String },
     refBy: {
@@ -55,7 +55,7 @@ const orderSchemaForUnregistered = new Schema({
     age: { type: String, required: true },
     gender: { type: String, required: true },
     address: { type: String },
-    phone: { type: String },
+    phone: { type: String, required: true },
     email: { type: String },
     consultant: { type: Schema.Types.ObjectId, ref: 'doctor' },
   },
