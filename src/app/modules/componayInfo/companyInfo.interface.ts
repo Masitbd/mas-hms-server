@@ -6,6 +6,7 @@ export type TCompanyInfo = {
   default: boolean;
   photoUrl: string;
   publicId: string; // For cloudinary image
+  photo: string;
 };
 
 export type TCompanyInfoForOffline = TCompanyInfo & {

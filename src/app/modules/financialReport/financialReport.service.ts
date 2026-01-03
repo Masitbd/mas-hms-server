@@ -77,6 +77,7 @@ const fetchDeptWIseDoctorPerformance = async (params: {
   from: Date;
   to: Date;
   refBy: string;
+  type: string;
 }) => {
   return await Order.aggregate(
     doctorPerformanceSummeryDeptWisePipeline(params)
@@ -86,6 +87,7 @@ const fetchTestWIseDoctorPerformance = async (params: {
   from: Date;
   to: Date;
   refBy: string;
+  type: string;
 }) => {
   return await Order.aggregate(
     doctorPerformanceSummeryTestWisePipeline(params)

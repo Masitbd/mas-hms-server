@@ -9,6 +9,7 @@ const companyInfoSchema = new Schema<TCompanyInfo>({
   photoUrl: { type: String },
   publicId: { type: String }, // For cloudinary image
   default: { type: Boolean },
+  photo: { type: String },
 });
 
 const companyInfoSchemaForOffline = new Schema<TCompanyInfoForOffline>({

@@ -41,8 +41,7 @@ const createCompanyInfoIntoDB = async (payload: TCompanyInfo) => {
 // get info
 
 const getCompanyInfoFromDB = async () => {
-
-  const result = await CompanyInfo.find();
+  const result = await CompanyInfo.find().select({ photo: 0 });
   return result;
 };
 
@@ -64,15 +63,6 @@ const updateCompanyInfoIntoDB = async (
         await doesDefaultExists[0].save({ session });
       }
     }
-
-    const doesExists = await CompanyInfo.findById(id).session(session);
-
-    if (doesExists && doesExists.publicId !== payload?.publicId) {
-      if (doesExists.publicId) {
-        await cloudinary.v2.uploader.destroy(doesExists.publicId);
-      }
-    }
-
     const result = await CompanyInfo.findByIdAndUpdate(id, payload, {
       new: true,
       session,
@@ -120,9 +110,6 @@ const deleteCompanyInfo = async (id: string) => {
       httpStatus.CONFLICT,
       'Default company info cannot be deleted. Please change default and try again.'
     );
-  }
-  if (doesExists && doesExists.publicId) {
-    await cloudinary.v2.uploader.destroy(doesExists.publicId);
   }
   return await CompanyInfo.deleteOne({ _id: id });
 };

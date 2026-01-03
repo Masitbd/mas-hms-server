@@ -1129,11 +1129,14 @@ export const doctorPerformanceSummeryDeptWisePipeline = (params: {
   from: Date;
   to: Date;
   refBy: string;
+  type: string;
 }): PipelineStage[] => {
   return [
     {
       $match: {
-        refBy: new Types.ObjectId(params.refBy),
+        [params.type == 'refBy' ? 'refBy' : 'consultant']: new Types.ObjectId(
+          params.refBy
+        ),
         discountedBy: { $ne: 'free' },
         createdAt: {
           $lte: new Date(params.to),
@@ -1376,11 +1379,14 @@ export const doctorPerformanceSummeryTestWisePipeline = (params: {
   from: Date;
   to: Date;
   refBy: string;
+  type: string;
 }): PipelineStage[] => {
   return [
     {
       $match: {
-        refBy: new Types.ObjectId(params.refBy),
+        [params.type == 'refBy' ? 'refBy' : 'consultant']: new Types.ObjectId(
+          params.refBy
+        ),
         discountedBy: { $ne: 'free' },
         createdAt: {
           $lte: new Date(params.to),
