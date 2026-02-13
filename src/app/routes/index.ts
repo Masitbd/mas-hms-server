@@ -12,6 +12,7 @@ import { DoctorSealRoutes } from '../modules/doctorSeal/seal.routes';
 import { FinancialReportRoutes } from '../modules/financialReport/financialReport.routes';
 import { HospitalGroupRoutes } from '../modules/hospitalGroup/hospitalGroup.routes';
 import { incomeStatementRoutes } from '../modules/incomeStatement/incomeStatement.routes';
+import { JournalEntryRoutes } from '../modules/journal-entry/JounralEntry.routes';
 import { MiscellaneousRoutes } from '../modules/miscellaneous/miscellaneous.routes';
 import { OrderRoutes } from '../modules/order/order.routes';
 import { PatientRoute } from '../modules/patient/patient.route';
@@ -143,6 +144,10 @@ const moduleRoutes = [
   {
     path: '/report-margin',
     route: ReportMarginsRoutes.routes,
+  },
+  {
+    path: '/journal-entry',
+    route: JournalEntryRoutes,
   },
 ];
 

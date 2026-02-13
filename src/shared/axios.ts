@@ -6,7 +6,7 @@ const HttpService = (baseUrl: string): AxiosInstance => {
 
   const instance = axios.create({
     baseURL: baseUrl,
-    timeout: 6000000,
+    timeout: 600000000,
     headers: {
       'Content-Type': 'application/json',
     },
