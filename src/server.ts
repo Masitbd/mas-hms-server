@@ -13,6 +13,8 @@ async function bootstrap() {
       // logger.info(`Server running on port ${config.port}`);
       console.log(`Server running on port ${config.port}`);
     });
+
+    // await journalEntryService.restoreFailedEntry();
   } catch (err) {
     // errorlogger.error('Failed to connect database', err);
     console.log('Failed to connect database', err);
